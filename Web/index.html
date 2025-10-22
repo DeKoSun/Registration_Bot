@@ -87,7 +87,7 @@
     .feathers span:nth-child(odd){ color:rgba(255,106,0,.95) }
     @keyframes float{ to{ transform:translateY(-35px) rotate(360deg) } }
 
-    header.hero{ position:relative; z-index:1; padding:26px 26px 10px; text-align:center }
+    header.hero{ position:relative; z-index:1; padding:26px 26px 14px; text-align:center }
     h1.title{
       font-family:'Ruslan Display',serif; text-transform:uppercase; letter-spacing:.12em; font-weight:400;
       margin:6px 0 8px; font-size:52px;
@@ -101,17 +101,47 @@
       100%{ text-shadow:0 0 14px rgba(255,106,0,.2), 0 0 20px rgba(255,223,144,.12) }
     }
 
-    .subtitle{margin:0;color:var(--muted);font-size:14px}
+    .subtitle{margin:8px 0 0;color:var(--muted);font-size:14px}
+
+    /* 🥚 Яйцо феникса (между h1 и подзаголовком) */
+    .egg-wrap{
+      display:flex; justify-content:center; align-items:center;
+      margin:6px auto 6px;  /* компактный вертикальный ритм */
+      height:148px;         /* стабильная высота, чтобы текст не «прыгался» */
+    }
+    .egg{
+      position:relative; width:148px; height:148px; border-radius:24px;
+      background:radial-gradient(circle at 50% 55%, rgba(255,210,120,.15), rgba(255,130,40,.08) 60%, transparent 65%);
+      box-shadow:
+        0 0 24px rgba(255,160,60,.22),
+        0 0 54px rgba(255,120,30,.12),
+        inset 0 0 18px rgba(255,200,120,.07);
+      overflow:hidden;
+    }
+    .egg video,.egg img{
+      width:100%; height:100%; object-fit:cover; display:block;
+      filter: saturate(1.05) contrast(1.02);
+    }
+    .egg::after{
+      content:""; position:absolute; inset:-12px;
+      background: conic-gradient(from 0deg, rgba(255,160,60,.12), rgba(255,210,120,.06), transparent 40%, rgba(255,120,40,.10));
+      border-radius:28px; filter:blur(18px); pointer-events:none;
+      animation:eggGlow 6s ease-in-out infinite;
+    }
+    @keyframes eggGlow{
+      0%,100%{ opacity:.55; transform:scale(1) }
+      50%{ opacity:.85; transform:scale(1.02) }
+    }
 
     form{ position:relative; z-index:1; padding:8px 18px 26px }
     .group{ margin:14px 0 12px }
     /* идеальный стык сразу после даты рождения */
-    #birthGroup{ margin-bottom:8px }      /* чуть меньше, чтобы визуально совпадало с следующей grid-2 */
-    .group.grid-2{                        /* сетка для Страна/Город */
+    #birthGroup{ margin-bottom:8px }
+    .group.grid-2{
       display:grid;
       grid-template-columns:1fr 1fr;
       gap:10px;
-      margin-top:4px;                     /* минимальный верхний зазор */
+      margin-top:4px;
     }
 
     label{display:block; font-weight:700; color:var(--gold-2); margin:0 0 10px 2px; letter-spacing:.03em; text-shadow:0 0 16px rgba(255,106,0,.25)}
@@ -165,6 +195,8 @@
     @media (max-width:520px){
       .chips{ grid-template-columns: 1fr }
       h1.title{ font-size:42px }
+      .egg-wrap{ height:136px }
+      .egg{ width:136px; height:136px }
       #daysChips{ grid-template-columns: 1fr }
       .group.grid-2{ grid-template-columns:1fr; }
     }
@@ -204,6 +236,25 @@
       <header class="hero">
         <!-- эмблему убрали по твоей просьбе -->
         <h1 class="title">ФЕНИКС</h1>
+
+        <!-- 🥚 Яйцо феникса между заголовком и подзаголовком -->
+        <div class="egg-wrap">
+          <div class="egg">
+            <video id="eggvid"
+              preload="metadata"
+              autoplay
+              muted
+              playsinline
+              loop
+              poster="icons/egg-poster.jpg">
+              <!-- 🔧 EGG SOURCES -->
+              <source src="icons/egg.webm" type="video/webm">
+              <source src="icons/egg.mp4"  type="video/mp4">
+              <img src="icons/egg.gif" alt="">
+            </video>
+          </div>
+        </div>
+
         <p class="subtitle">Заполни форму — пусть пламя приведёт тебя в команду.</p>
       </header>
 
@@ -255,7 +306,7 @@
             <label class="chip"><input type="checkbox" name="decks" value="Орк"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/Orc.png')"></div><span class="label-inline">Орк</span></label>
             <label class="chip"><input type="checkbox" name="decks" value="Упряжка"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/Sled.png')"></div><span class="label-inline">Упряжка</span></label>
             <label class="chip"><input type="checkbox" name="decks" value="Гном"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/Dwarf.png')"></div><span class="label-inline">Гном</span></label>
-            <!-- ВАЖНО: оставляю ссылку ровно как у тебя -->
+            <!-- «Звёздный» — оставляю твой путь без изменений -->
             <label class="chip"><input type="checkbox" name="decks" value="Звёздный"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/alien.png')"></div><span class="label-inline">Звёздный</span></label>
           </div>
         </div>
@@ -335,7 +386,7 @@
     if (window.__PHOENIX_BOOTED__) return;
     window.__PHOENIX_BOOTED__ = true;
 
-    /* 🎥 Автовоспроизведение видео + уважение reduce-motion */
+    /* 🎥 Автовоспроизведение фона */
     (function(){
       const v = document.getElementById('bgvid');
       if(!v) return;
@@ -346,13 +397,24 @@
       document.addEventListener('visibilitychange', () => { if (document.hidden) v.pause(); else v.play().catch(()=>{}); });
     })();
 
+    /* 🎬 Автовоспроизведение яйца феникса */
+    (function(){
+      const e = document.getElementById('eggvid');
+      if(!e) return;
+      const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+      function applyMotion(evn){ if (evn.matches) e.pause(); else e.play().catch(()=>{}); }
+      applyMotion(prefersReduce);
+      prefersReduce.addEventListener?.('change', applyMotion);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) e.pause(); else e.play().catch(()=>{}); });
+    })();
+
     /* ✨ Искры */
     const cvs = document.getElementById('embers');
     if (cvs) {
       const ctx = cvs.getContext('2d');
       ctx.globalCompositeOperation = 'lighter';
       let W,H,embers=[];
-      const FX = { rise: 0.25, spin: 0.012 };
+      const FX = { rise: 0.20, spin: 0.010 }; // чуточку медленнее, как ты просил
 
       function resize(){ W=innerWidth; H=innerHeight; cvs.width=W; cvs.height=H; make(); }
       function make(){
