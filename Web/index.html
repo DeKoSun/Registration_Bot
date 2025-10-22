@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ФЕНИКС — регистрация игрока</title>
+
+  <!-- Supabase плейсхолдеры -->
+  <script>
+    window.SUPABASE_URL = window.SUPABASE_URL || "https://YOUR_PROJECT.supabase.co";
+    window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "YOUR_PUBLIC_ANON_KEY";
+  </script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Ruslan+Display&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root{
+      --bg:#080b10;
+      --panel:#0f141b;
+      --gold:#ffd166;
+      --gold-2:#ffe8a3;
+      --ink:#f4f6f8;
+      --muted:#9aa5b1;
+      --accent:#ff6a00;
+      --accent-2:#ff9f43;
+      --radius:20px;
+      --shadow:0 10px 30px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    html,body{height:100%}
+    *,*::before,*::after{ box-sizing:border-box }
+
+    /* Базовый фон (если видео не прогрузится) */
+    body{
+      margin:0;
+      background: radial-gradient(65% 55% at 50% 40%, #0f141b, #080b10);
+      color:var(--ink);
+      font:500 16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+      overflow-x:hidden;
+    }
+
+    /* 🎥 Фиксированное фоновое видео */
+    .bg-video{
+      position:fixed; inset:0;
+      z-index:100;
+      pointer-events:none;
+      display:grid; place-items:center;
+    }
+    .bg-video video{
+      width:100vw; height:100vh; object-fit:cover;
+      filter:none;
+    }
+    .bg-video::after{
+      content:""; position:absolute; inset:0;
+      background: linear-gradient(180deg, rgba(6,8,12,.55) 0%, rgba(6,8,12,.18) 32%, rgba(6,8,12,.10) 45%, rgba(6,8,12,.35) 70%, rgba(6,8,12,.62) 100%);
+    }
+
+    /* ✨ Искры */
+    canvas#embers{
+      position:fixed; inset:0;
+      z-index:110;
+      pointer-events:none;
+    }
+
+    /* Солнечные всполохи */
+    .solar{
+      position:fixed; inset:0; pointer-events:none;
+      background:
+        radial-gradient(1200px 400px at 50% -200px, rgba(255,140,20,.12), transparent 70%),
+        radial-gradient(800px 320px at 20% -120px, rgba(255,200,80,.10), transparent 60%),
+        radial-gradient(900px 320px at 80% -120px, rgba(255,120,40,.08), transparent 60%);
+      filter: blur(6px);
+      z-index:120;
+    }
+
+    .wrap{ max-width:900px; margin:0 auto; padding:24px 20px 44px; position:relative; z-index:130 }
+
+    .card{
+      position:relative; overflow:hidden; border-radius:var(--radius);
+      background:linear-gradient(180deg, rgba(20,25,35,.72), rgba(12,16,22,.88));
+      border:1px solid rgba(255,255,255,.06); box-shadow:var(--shadow);
+      backdrop-filter:blur(10px) saturate(120%);
+    }
+
+    .feathers{ position:absolute; inset:-8px; pointer-events:none; filter:drop-shadow(0 0 10px rgba(255,106,0,.35)); opacity:.75; z-index:0 }
+    .feathers span{ position:absolute; color:rgba(255,159,67,.9); font-size:12px; animation:float 12s linear infinite; }
+    .feathers span:nth-child(odd){ color:rgba(255,106,0,.95) }
+    @keyframes float{ to{ transform:translateY(-35px) rotate(360deg) } }
+
+    header.hero{ position:relative; z-index:1; padding:26px 26px 10px; text-align:center }
+    h1.title{
+      font-family:'Ruslan Display',serif; text-transform:uppercase; letter-spacing:.12em; font-weight:400;
+      margin:6px 0 8px; font-size:52px;
+      background:linear-gradient(180deg,var(--gold-2),var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent;
+      text-shadow:0 0 16px rgba(255,106,0,.28), 0 0 30px rgba(255,223,144,.2);
+      animation:breatheGlow 5.2s ease-in-out infinite
+    }
+    @keyframes breatheGlow{
+      0%{   text-shadow:0 0 14px rgba(255,106,0,.2), 0 0 20px rgba(255,223,144,.12) }
+      50%{  text-shadow:0 0 28px rgba(255,106,0,.45),0 0 36px rgba(255,223,144,.24) }
+      100%{ text-shadow:0 0 14px rgba(255,106,0,.2), 0 0 20px rgba(255,223,144,.12) }
+    }
+
+    .subtitle{margin:0;color:var(--muted);font-size:14px}
+
+    form{ position:relative; z-index:1; padding:8px 18px 26px }
+    .group{ margin:14px 0 12px }
+    /* идеальный стык сразу после даты рождения */
+    #birthGroup{ margin-bottom:8px }      /* чуть меньше, чтобы визуально совпадало с следующей grid-2 */
+    .group.grid-2{                        /* сетка для Страна/Город */
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:4px;                     /* минимальный верхний зазор */
+    }
+
+    label{display:block; font-weight:700; color:var(--gold-2); margin:0 0 10px 2px; letter-spacing:.03em; text-shadow:0 0 16px rgba(255,106,0,.25)}
+    .group label:not(.chip){ font-size:17px; color:var(--gold); margin:18px 0 12px 2px }
+
+    .input, textarea, select{
+      width:100%; color:var(--ink);
+      background:linear-gradient(180deg, rgba(20,24,32,.85), rgba(12,16,22,.85));
+      border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:14px; outline:none; transition:.2s ease;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,.35); font-size:15px
+    }
+    textarea{ min-height:84px; resize:vertical }
+    .input::placeholder, textarea::placeholder{ color:#a9b4bf; font-style:normal }
+    .input:focus, textarea:focus, select:focus{ border-color:rgba(255,106,0,.45); box-shadow:0 0 0 4px rgba(255,106,0,.12), inset 0 2px 6px rgba(0,0,0,.35) }
+
+    select{ appearance:none; -webkit-appearance:none; -moz-appearance:none; padding-right:42px;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M7 10l5 5 5-5' stroke='%23ffe8a3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 14px center; }
+    select option{ color:#0b0f14; background:#ffffff }
+    select option[disabled]{ color:#8b8f99 }
+
+    .chips{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px }
+    .chip{
+      position:relative; display:flex; align-items:center; gap:12px; padding:14px; border-radius:14px; width:100%; cursor:pointer;
+      background:linear-gradient(180deg, rgba(20,24,32,.65), rgba(15,20,26,.9)); border:1px solid rgba(255,255,255,.08); box-shadow:var(--shadow);
+    }
+    .chip:hover{ transform:translateY(-1px); border-color:rgba(255,106,0,.35); box-shadow:0 6px 22px rgba(255,106,0,.18), var(--shadow) }
+    .chip input{ position:absolute; inset:0; opacity:0; pointer-events:none }
+
+    .toggler{ width:22px; height:22px; flex:0 0 22px; border-radius:8px; background:linear-gradient(180deg, rgba(20,24,32,.85), rgba(12,16,22,.85));
+      border:1px solid rgba(255,255,255,.08); position:relative; box-shadow:inset 0 2px 6px rgba(0,0,0,.35) }
+    .toggler::after{ content:""; position:absolute; inset:4px; border-radius:6px; background:linear-gradient(180deg, var(--accent-2), var(--accent));
+      box-shadow:0 0 18px rgba(255,106,0,.45); transform:scale(0); transition:.18s ease }
+    .chip input:checked + .toggler::after{ transform:scale(1) }
+
+    .icon-img{ width:48px; height:48px; flex:0 0 48px; border-radius:12px; background-size:cover; background-position:center; box-shadow:0 2px 6px rgba(0,0,0,.35); outline:1px solid rgba(255,255,255,.08) }
+    .label-inline{ color:var(--ink) }
+
+    #daysChips{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+    #daysChips .sunday{ grid-column: 1 / -1; justify-content:center; }
+
+    .submit{
+      width:100%; border:0; cursor:pointer; margin-top:12px; font-weight:900; letter-spacing:.06em; font-size:18px; text-transform:uppercase; color:#0b0f14;
+      border-radius:18px; padding:20px 24px; min-height:64px;
+      background:linear-gradient(90deg, var(--accent), var(--accent-2));
+      box-shadow:0 18px 30px rgba(255,106,0,.35), inset 0 -3px 0 rgba(0,0,0,.25);
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .submit:hover{ transform: translateY(-1px); box-shadow:0 26px 40px rgba(255,106,0,.45) }
+
+    @media (max-width:520px){
+      .chips{ grid-template-columns: 1fr }
+      h1.title{ font-size:42px }
+      #daysChips{ grid-template-columns: 1fr }
+      .group.grid-2{ grid-template-columns:1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .bg-video video{ animation:none }
+    }
+  </style>
+</head>
+<body>
+  <!-- 🎥 Фиксированное фоновое видео -->
+  <div class="bg-video" aria-hidden="true">
+    <video
+      id="bgvid"
+      preload="metadata"
+      autoplay
+      playsinline
+      muted
+      loop
+      poster="icons/phoenix-bg.png">
+      <source src="icons/phoenix-bg.webm" type="video/webm">
+      <source src="icons/phoenix-bg.mp4" type="video/mp4">
+      <img src="icons/phoenix-bg.png" alt="">
+    </video>
+  </div>
+
+  <!-- Искры -->
+  <canvas id="embers"></canvas>
+
+  <!-- Солнечные всполохи -->
+  <div class="solar" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="feathers" aria-hidden="true"></div>
+
+      <header class="hero">
+        <!-- эмблему убрали по твоей просьбе -->
+        <h1 class="title">ФЕНИКС</h1>
+        <p class="subtitle">Заполни форму — пусть пламя приведёт тебя в команду.</p>
+      </header>
+
+      <form id="regForm">
+        <div class="group">
+          <label for="nickname">Ник в игре Doors & Treasures</label>
+          <input class="input" id="nickname" name="nickname" placeholder="например, DeKo_Sun" required maxlength="40" />
+        </div>
+
+        <div class="group">
+          <label for="telegram">Telegram (без @)</label>
+          <input class="input" id="telegram" name="telegram" placeholder="например, DeKo_Soon" required pattern="^[A-Za-z0-9_]{5,}$" />
+        </div>
+
+        <div class="group" id="birthGroup">
+          <label for="birthdate">Дата рождения</label>
+          <input class="input" id="birthdate" name="birthdate" type="date" required />
+        </div>
+
+        <!-- Страна / Город -->
+        <div class="group grid-2">
+          <div>
+            <label for="country">Страна</label>
+            <input class="input" id="country" name="country" placeholder="например, США" maxlength="60" autocapitalize="off" autocomplete="country-name" />
+          </div>
+          <div>
+            <label for="city">Город</label>
+            <input class="input" id="city" name="city" placeholder="например, Нью-Йорк" maxlength="60" autocapitalize="off" autocomplete="address-level2" />
+          </div>
+        </div>
+
+        <div class="group">
+          <label>Какие дни предпочитаешь для игр?</label>
+          <div class="chips" id="daysChips"></div>
+        </div>
+
+        <div class="group">
+          <label>Удобное время для игр (местное время)</label>
+          <div class="chips" id="timesChips"></div>
+        </div>
+
+        <div class="group">
+          <label>Любимые колоды(а)</label>
+          <div class="chips">
+            <label class="chip"><input type="checkbox" name="decks" value="Вампир"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/Vampire.png')"></div><span class="label-inline">Вампир</span></label>
+            <label class="chip"><input type="checkbox" name="decks" value="Ктулху"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/Cthulhu.png')"></div><span class="label-inline">Ктулху</span></label>
+            <label class="chip"><input type="checkbox" name="decks" value="Котэ"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/Cat.png')"></div><span class="label-inline">Котэ</span></label>
+            <label class="chip"><input type="checkbox" name="decks" value="Стандарт"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/Standard.png')"></div><span class="label-inline">Стандарт</span></label>
+            <label class="chip"><input type="checkbox" name="decks" value="Орк"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/Orc.png')"></div><span class="label-inline">Орк</span></label>
+            <label class="chip"><input type="checkbox" name="decks" value="Упряжка"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/Sled.png')"></div><span class="label-inline">Упряжка</span></label>
+            <label class="chip"><input type="checkbox" name="decks" value="Гном"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/Dwarf.png')"></div><span class="label-inline">Гном</span></label>
+            <!-- ВАЖНО: оставляю ссылку ровно как у тебя -->
+            <label class="chip"><input type="checkbox" name="decks" value="Звёздный"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/alien.png')"></div><span class="label-inline">Звёздный</span></label>
+          </div>
+        </div>
+
+        <div class="group">
+          <label>Какие игровые роли предпочитаешь?</label>
+          <div class="chips">
+            <label class="chip"><input type="checkbox" name="roles" value="Атакующий"><span class="toggler"></span><span class="label-inline">⚔️ Атакующий</span></label>
+            <label class="chip"><input type="checkbox" name="roles" value="Оборонительный"><span class="toggler"></span><span class="label-inline">🛡️ Оборонительный</span></label>
+            <label class="chip"><input type="checkbox" name="roles" value="Комбинированный"><span class="toggler"></span><span class="label-inline">🔀 Комбинированный</span></label>
+            <label class="chip"><input type="checkbox" name="roles" value="Капитан пары"><span class="toggler"></span><span class="label-inline">👑 Капитан пары</span></label>
+          </div>
+        </div>
+
+        <div class="group">
+          <label for="experience">Опыт в Doors & Treasures</label>
+          <select id="experience" class="input" name="experience" required>
+            <option value="" disabled selected hidden>выбери…</option>
+            <option value="Новичок (0–100 игр)">Новичок (0–100 игр)</option>
+            <option value="Опытный (101–1 000 игр)">Опытный (101–1 000 игр)</option>
+            <option value="Ветеран (1 000 и более игр)">Ветеран (1 000 и более игр)</option>
+          </select>
+        </div>
+
+        <div class="group">
+          <label>Клановая вовлечённость</label>
+          <label class="chip">
+            <input type="checkbox" id="clan_life" />
+            <span class="toggler" aria-hidden="true"></span>
+            <span class="label-inline">Готов принимать участие в жизни клана</span>
+          </label>
+          <label class="chip" style="margin-top:8px;">
+            <input type="checkbox" id="play_other" />
+            <span class="toggler" aria-hidden="true"></span>
+            <span class="label-inline">Предпочитаю играть в Alias, Codenames, Бункер и другие игры</span>
+          </label>
+        </div>
+
+        <div class="group">
+          <label for="expect">Ожидания от клана</label>
+          <textarea id="expect" name="expect" placeholder="например, хочу чаще играть в вечерних турнирах…"></textarea>
+        </div>
+
+        <div class="group">
+          <label for="partners">С кем комфортно играть? (ники через запятую, если есть)</label>
+          <input class="input" id="partners" name="partners" placeholder="например, DeKo_Sun, PlayerX" />
+        </div>
+
+        <div class="group">
+          <label for="conflicts">Есть нежелательные сочетания или конфликты?</label>
+          <textarea id="conflicts" name="conflicts" placeholder="например, избегать пары с PlayerY"></textarea>
+        </div>
+
+        <div class="group">
+          <label class="chip"><input type="checkbox" id="notify_ok" required /><span class="toggler"></span><span class="label-inline">Согласен получать теги и уведомления от бота</span></label>
+          <label class="chip" style="margin-top:8px;"><input type="checkbox" id="rules_ok" required /><span class="toggler"></span><span class="label-inline">Подтверждаю честную игру и уважение к участникам клана</span></label>
+        </div>
+
+        <button class="submit" type="submit">ЗАРЕГИСТРИРОВАТЬСЯ</button>
+      </form>
+    </div>
+
+    <!-- Админ-просмотр (?admin=1) -->
+    <div id="admin" class="card" style="display:none; margin-top:16px; padding:14px 18px 22px">
+      <h2 style="margin:6px 0 14px; font-family:'Ruslan Display',serif; letter-spacing:.06em">Админ-просмотр</h2>
+      <div style="display:grid; grid-template-columns:1fr 160px; gap:10px; margin-bottom:10px">
+        <input class="input" id="search" placeholder="поиск по нику или телеграм" />
+        <button id="reload" class="submit" style="min-height:48px; padding:12px 16px">Обновить</button>
+      </div>
+      <div id="grid" style="overflow:auto; max-height:60vh; border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:8px"></div>
+      <p style="color:var(--muted); font-size:12px; margin-top:8px">Подключи PUBLIC ключи Supabase (anon), иначе просмотр не загрузится.</p>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    if (window.__PHOENIX_BOOTED__) return;
+    window.__PHOENIX_BOOTED__ = true;
+
+    /* 🎥 Автовоспроизведение видео + уважение reduce-motion */
+    (function(){
+      const v = document.getElementById('bgvid');
+      if(!v) return;
+      const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+      function applyMotionPref(e){ if (e.matches) v.pause(); else v.play().catch(()=>{}); }
+      applyMotionPref(prefersReduce);
+      prefersReduce.addEventListener?.('change', applyMotionPref);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) v.pause(); else v.play().catch(()=>{}); });
+    })();
+
+    /* ✨ Искры */
+    const cvs = document.getElementById('embers');
+    if (cvs) {
+      const ctx = cvs.getContext('2d');
+      ctx.globalCompositeOperation = 'lighter';
+      let W,H,embers=[];
+      const FX = { rise: 0.25, spin: 0.012 };
+
+      function resize(){ W=innerWidth; H=innerHeight; cvs.width=W; cvs.height=H; make(); }
+      function make(){
+        const count = Math.min(260, Math.floor(W*H/6500));
+        embers=Array.from({length:count}, () => ({
+          x:Math.random()*W, y:Math.random()*H,
+          r:Math.random()*1.5+.25, s:Math.random()*.6+.25, a:Math.random()*Math.PI*2
+        }));
+      }
+      function draw(){
+        ctx.clearRect(0,0,W,H);
+        for(const p of embers){
+          p.a += FX.spin;
+          const t=(Math.sin(p.a)+1)/2;
+          ctx.beginPath();
+          ctx.arc(p.x,p.y,p.r+t*.7,0,Math.PI*2);
+          ctx.fillStyle=`rgba(255,${120+(t*90|0)},0,${.28+t*.25})`;
+          ctx.fill();
+          p.y -= (p.s)*FX.rise;
+          if(p.y<-6){ p.y=H+6; p.x=Math.random()*W; }
+        }
+        requestAnimationFrame(draw);
+      }
+      resize(); draw(); addEventListener('resize', resize);
+    }
+
+    /* Декор в карточке */
+    (function(){
+      const box=document.querySelector('.feathers'); if(!box) return;
+      const glyphs='~ ∿ 〰  ≈  ∼  ˜  ﹌  ﹋';
+      for(let i=0;i<30;i++){
+        const s=document.createElement('span');
+        s.textContent=glyphs[Math.floor(Math.random()*glyphs.length)];
+        s.style.left=(Math.random()*100)+'%';
+        s.style.top=(Math.random()*100)+'%';
+        s.style.animationDuration=(9+Math.random()*13)+'s';
+        s.style.fontSize=(10+Math.random()*8)+'px';
+        box.appendChild(s);
+      }
+    })();
+
+    /* Дни/время */
+    const DAYS=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+    const TIMES=['07:00 – 10:00','10:00 – 13:00','13:00 – 16:00','16:00 – 19:00','19:00 – 23:00','23:00 – 06:00'];
+
+    function renderChips(containerId, values, name){
+      const box=document.getElementById(containerId); if(!box) return;
+      box.innerHTML='';
+      values.forEach(v=>{
+        const lbl=document.createElement('label'); lbl.className='chip';
+        if(containerId==='daysChips' && v==='Воскресенье') lbl.classList.add('sunday');
+        lbl.innerHTML = `<input type="checkbox" name="${name}" value="${v}"><span class="toggler"></span><span class="label-inline">${v}</span>`;
+        box.appendChild(lbl);
+      })
+    }
+    renderChips('daysChips', DAYS, 'days');
+    renderChips('timesChips', TIMES, 'times');
+
+    /* Supabase */
+    const SUPABASE_URL = window.SUPABASE_URL;
+    const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
+    const supabase = (SUPABASE_URL && !SUPABASE_URL.includes('YOUR_')) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+    /* Submit */
+    const form = document.getElementById('regForm');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const decks = [...form.querySelectorAll('input[name="decks"]:checked')].map(x => x.value);
+      const roles = [...form.querySelectorAll('input[name="roles"]:checked')].map(x => x.value);
+      const days  = [...form.querySelectorAll('input[name="days"]:checked')].map(x => x.value);
+      const times = [...form.querySelectorAll('input[name="times"]:checked')].map(x => x.value);
+
+      const payload = {
+        clan: 'Феникс',
+        nickname: form.nickname.value.trim(),
+        telegram: form.telegram.value.trim(),
+        birthdate: form.birthdate.value || null,
+        country: form.country.value.trim() || null,
+        city: form.city.value.trim() || null,
+        days, times,
+        expectations: form.expect?.value.trim() || null,
+        experience: form.experience.value || null,
+        partners: form.partners?.value.trim() || null,
+        conflicts: form.conflicts?.value.trim() || null,
+        decks,
+        roles,
+        play_other: document.getElementById('play_other')?.checked || false,
+        clan_life: document.getElementById('clan_life')?.checked || false,
+        created_at: new Date().toISOString()
+      };
+
+      try {
+        if(supabase){
+          const { error: e1 } = await supabase.from('rg_players').insert(payload);
+          if(e1) throw e1;
+          const { error: e2 } = await supabase.from('rg_consents').insert({
+            notify_ok: document.getElementById('notify_ok').checked,
+            rules_ok: document.getElementById('rules_ok').checked
+          });
+          if(e2) console.warn('Consent insert warning:', e2.message);
+        }
+        alert('Спасибо! Анкета отправлена.');
+      } catch (err) {
+        alert('Ошибка отправки! Попробуй ещё раз или свяжись с админом.');
+        console.error(err);
+      }
+    });
+
+    /* Админ-просмотр (?admin=1) */
+    (async function(){
+      const params = new URLSearchParams(location.search);
+      if(params.get('admin') !== '1') return;
+      const adminEl = document.getElementById('admin'); adminEl.style.display='block';
+      if(!supabase){ document.getElementById('grid').innerHTML = '<p style="color:var(--muted)">Укажи SUPABASE_URL и SUPABASE_ANON_KEY.</p>'; return; }
+
+      const grid = document.getElementById('grid');
+      const search = document.getElementById('search');
+      const reload = document.getElementById('reload');
+
+      async function load(){
+        const term = (search.value||'').trim().toLowerCase();
+        const { data, error } = await supabase
+          .from('rg_players')
+          .select('*')
+          .order('created_at',{ascending:false})
+          .limit(500);
+        if(error){ grid.textContent = error.message; return; }
+        const rows = term
+          ? data.filter(r => (r.nickname||'').toLowerCase().includes(term) || (r.telegram||'').toLowerCase().includes(term))
+          : data;
+        render(rows);
+      }
+
+      function pill(list){ return Array.isArray(list)&&list.length? list.join(', ') : '—'; }
+
+      function render(rows){
+        if(!rows || !rows.length){ grid.innerHTML = '<p style="color:var(--muted); margin:6px">Пока пусто.</p>'; return; }
+        const html = [`<table style="width:100%; border-collapse:separate; border-spacing:0 6px; font-size:14px">`,
+          `<thead><tr>`+
+            `<th style="text-align:left; padding:6px 8px">Ник</th>`+
+            `<th style="text-align:left; padding:6px 8px">TG</th>`+
+            `<th style="text-align:left; padding:6px 8px">Город</th>`+
+            `<th style="text-align:left; padding:6px 8px">Опыт</th>`+
+            `<th style="text-align:left; padding:6px 8px">Дни</th>`+
+            `<th style="text-align:left; padding:6px 8px">Время</th>`+
+            `<th style="text-align:left; padding:6px 8px">Роли</th>`+
+            `<th style="text-align:left; padding:6px 8px">Колоды</th>`+
+            `<th style="text-align:left; padding:6px 8px">Создано</th>`+
+          `</tr></thead><tbody>`];
+        rows.forEach(r=>{
+          html.push(`<tr>`+
+            `<td style="background:#141a22; padding:8px 10px; border-radius:10px 0 0 10px">${r.nickname||''}</td>`+
+            `<td style="background:#141a22; padding:8px 10px">${r.telegram||''}</td>`+
+            `<td style="background:#141a22; padding:8px 10px">${[r.city,r.country].filter(Boolean).join(', ')}</td>`+
+            `<td style="background:#141a22; padding:8px 10px">${r.experience||''}</td>`+
+            `<td style="background:#141a22; padding:8px 10px">${pill(r.days)}</td>`+
+            `<td style="background:#141a22; padding:8px 10px">${pill(r.times)}</td>`+
+            `<td style="background:#141a22; padding:8px 10px">${pill(r.roles)}</td>`+
+            `<td style="background:#141a22; padding:8px 10px">${pill(r.decks)}</td>`+
+            `<td style="background:#141a22; padding:8px 10px; border-radius:0 10px 10px 0">${new Date(r.created_at).toLocaleString()}</td>`+
+          `</tr>`);
+        });
+        html.push(`</tbody></table>`);
+        grid.innerHTML = html.join('');
+      }
+
+      reload.addEventListener('click', load);
+      search.addEventListener('input', load);
+      load();
+    })();
+
+    /* Короткие автотесты (?test=1) */
+    (function(){
+      const params = new URLSearchParams(location.search);
+      if(params.get('test') !== '1') return;
+      const results = [];
+      try{ results.push(['canvas-exists', !!document.getElementById('embers')]); }catch(e){ results.push(['canvas-exists', false, e.message]); }
+      try{ results.push(['days-fullnames-7', document.querySelectorAll('#daysChips .chip').length === 7]); }catch(e){ results.push(['days-fullnames-7', false, e.message]); }
+      try{ results.push(['times-6', document.querySelectorAll('#timesChips .chip').length === 6]); }catch(e){ results.push(['times-6', false, e.message]); }
+      console.table(results.map(([name, ok])=>({test:name, ok})));
+    })();
+
+  })();
+  </script>
+</body>
+</html>
