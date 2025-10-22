@@ -1,0 +1,39 @@
+name: 🚀 Deploy Web folder to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main  # деплой запускается при каждом пуше в main
+  workflow_dispatch:  # позволяет вручную запустить из вкладки Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧩 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: 📦 Upload Web folder
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./Web  # именно папка Web будет опубликована
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
