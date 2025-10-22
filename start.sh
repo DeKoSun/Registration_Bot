@@ -6,7 +6,8 @@ cd Bot
 
 # Обновляем pip и ставим зависимости
 python -m pip install --upgrade pip
+pip install -U pip
 pip install -r requirements.txt
 
 # Запускаем бота
-python main.py
+python3 main.py
