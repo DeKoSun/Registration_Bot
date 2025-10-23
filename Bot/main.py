@@ -100,7 +100,7 @@ async def set_commands(bot: Bot):
         BotCommand(command="start", description="Начало и кнопка регистрации"),
         BotCommand(command="registration", description="Ссылка на форму регистрации"),
         BotCommand(command="help", description="Справка"),
-        BotCommand(command="ping", description="Проверка доступности"),
+        BotCommand(command="ping", description="Проверка связи"),
     ]
     await bot.set_my_commands(commands)
     log.info("Команды бота установлены")
