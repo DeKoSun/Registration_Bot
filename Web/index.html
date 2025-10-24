@@ -407,53 +407,59 @@
 
     /* Submit */
     const form=document.getElementById('regForm');
-    form.addEventListener('submit',async(e)=>{
-      e.preventDefault();
+    form.addEventListener('submit', async (e) => {
+  e.preventDefault();
 
-      const decks=[...form.querySelectorAll('input[name="decks"]:checked')].map(x=>x.value);
-      const roles=[...form.querySelectorAll('input[name="roles"]:checked')].map(x=>x.value);
-      const days=[...form.querySelectorAll('input[name="days"]:checked')].map(x=>x.value);
-      const times=[...form.querySelectorAll('input[name="times"]:checked')].map(x=>x.value);
+  const decks = [...form.querySelectorAll('input[name="decks"]:checked')].map(x => x.value);
+  const roles = [...form.querySelectorAll('input[name="roles"]:checked')].map(x => x.value);
+  const days  = [...form.querySelectorAll('input[name="days"]:checked')].map(x => x.value);
+  const times = [...form.querySelectorAll('input[name="times"]:checked')].map(x => x.value);
 
-      const payload={
-        clan:'Феникс',
-        nickname:form.nickname.value.trim(),
-        telegram:form.telegram.value.trim(),                  // как ввёл пользователь
-        telegram_norm: normalizeTg(form.telegram.value),      // нормализованная версия (lowercase, без @)
-        telegram_id: tgIdRaw ? Number(tgIdRaw) : null,        // int8, если пришёл из диплинка
-        birthdate:form.birthdate.value||null,
-        country:form.country.value.trim()||null,
-        city:form.city.value.trim()||null,
-        days,times,
-        experience:form.experience.value||null,
-        expectations:form.expect?.value.trim()||null,
-        partners:form.partners?.value.trim()||null,
-        conflicts:form.conflicts?.value.trim()||null,
-        decks, roles,
-        play_other:document.getElementById('play_other')?.checked||false,
-        clan_life:document.getElementById('clan_life')?.checked||false,
-        user_agent: navigator.userAgent || null,
-        created_at:new Date().toISOString()
-      };
+  const payload = {
+    clan: 'Феникс',
+    nickname: form.nickname.value.trim(),
+    telegram: form.telegram.value.trim(),
+    telegram_norm: (form.telegram.value || '').trim().replace(/^@/, '').toLowerCase() || null,
+    telegram_id: (new URLSearchParams(location.search).get('tg_id') ? Number(new URLSearchParams(location.search).get('tg_id')) : null),
+    birthdate: form.birthdate.value || null,
+    country: form.country.value.trim() || null,
+    city: form.city.value.trim() || null,
+    days, times,
+    experience: form.experience.value || null,
+    expectations: form.expect?.value.trim() || null,
+    partners: form.partners?.value.trim() || null,
+    conflicts: form.conflicts?.value.trim() || null,
+    decks, roles,
+    play_other: document.getElementById('play_other')?.checked || false,
+    clan_life: document.getElementById('clan_life')?.checked || false,
+    user_agent: navigator.userAgent || null,
+    created_at: new Date().toISOString()
+  };
 
-      try{
-        if(supabase){
-          // форма пишет новую запись (бот уже делает upsert — пусть остаётся так)
-          const {error:e1}=await supabase.from('rg_players').insert(payload);
-          if(e1) throw e1;
+  try {
+    if (!supabase) throw new Error('Supabase клиент не инициализирован.');
 
-          const {error:e2}=await supabase.from('rg_consents').insert({
-            notify_ok:document.getElementById('notify_ok').checked,
-            rules_ok:document.getElementById('rules_ok').checked
-          });
-          if(e2) console.warn('Consent warn:',e2.message);
-        }
-        alert('Спасибо! Анкета отправлена.');
-      }catch(err){
-        console.error(err);
-        alert('Ошибка отправки! Попробуй ещё раз или свяжись с админом.');
-      }
+    // 1) Создаём игрока и забираем id
+    const { data: playerRow, error: insErr } =
+      await supabase.from('rg_players').insert(payload).select('id').single();
+    if (insErr) throw insErr;
+
+    // 2) Записываем согласия, уже с player_id
+    const { error: consErr } = await supabase.from('rg_consents').insert({
+      player_id: playerRow.id,                                 // <-- ВАЖНО
+      notify_ok: document.getElementById('notify_ok').checked,
+      rules_ok: document.getElementById('rules_ok').checked
     });
+    if (consErr) throw consErr;
+
+    alert('Спасибо! Анкета отправлена.');
+  } catch (err) {
+    // покажем реальную причину
+    console.error(err);
+    const msg = err?.message || err?.error_description || 'Неизвестная ошибка';
+    alert('Ошибка отправки: ' + msg);
+  }
+});
 
     /* Админ мини-просмотр, если ?admin=1 */
     (function(){
