@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ФЕНИКС — регистрация игрока</title>
 
-  <!-- Твои ключи Supabase можно положить сюда глобально (или оставить как есть, если уже подставляешь вне файла) -->
+  <!-- Публичные ключи Supabase (оставь как есть, если уже подставляешь где-то ещё) -->
   <script>
     window.SUPABASE_URL = window.SUPABASE_URL || "https://ucdvtuifhmxnygibykhl.supabase.co";
     window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjZHZ0dWlmaG14bnlnaWJ5a2hsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc4MDYsImV4cCI6MjA3NTQ4MzgwNn0.G7RdjUdwwOnjnAuWi0FwjqUoWAr4vutqUN7NUMmCIgM";
@@ -238,7 +238,7 @@
             <label class="chip"><input type="checkbox" name="decks" value="Орк"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/Orc.png')"></div><span class="label-inline">Орк</span></label>
             <label class="chip"><input type="checkbox" name="decks" value="Упряжка"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/Sled.png')"></div><span class="label-inline">Упряжка</span></label>
             <label class="chip"><input type="checkbox" name="decks" value="Гном"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/Dwarf.png')"></div><span class="label-inline">Гном</span></label>
-            <!-- «Звёздный» — не трогаю -->
+            <!-- «Звёздный» — оставляю твою ссылку -->
             <label class="chip"><input type="checkbox" name="decks" value="Звёздный"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/alien.png')"></div><span class="label-inline">Звёздный</span></label>
           </div>
         </div>
@@ -327,7 +327,7 @@
       document.addEventListener('visibilitychange',()=>{ if(document.hidden) v.pause(); else v.play().catch(()=>{}); });
     })();
 
-    /* анти-кеш для GIF (особенно при локальном открытии файла) */
+    /* анти-кеш для GIF при локальном открытии */
     (function(){
       const img=document.getElementById('egggif');
       if(!img) return;
@@ -391,75 +391,70 @@
     const SUPABASE_URL=window.SUPABASE_URL, SUPABASE_ANON_KEY=window.SUPABASE_ANON_KEY;
     const supabase=(SUPABASE_URL && !SUPABASE_URL.includes('YOUR_')) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-    /* ==== Считывание tg_id и нормализация username (для telegram_norm) ==== */
+    /* ==== tg_id из диплинка и нормализация username (используем только для отображения/поиска) ==== */
     const qs = new URLSearchParams(location.search);
-    const tgIdRaw = qs.get('tg_id'); // телеграм user id из диплинка бота
-    const tgUsernameParam = qs.get('tg') || qs.get('username') || qs.get('tg_username');
+    const tgIdFromLink = qs.get('tg_id'); // телеграм user id (string)
+    const tgUserFromLink = qs.get('tg') || qs.get('username') || qs.get('tg_username');
 
     const $tg = document.getElementById('telegram');
-    if (tgUsernameParam && $tg && !$tg.value) {
-      $tg.value = tgUsernameParam.replace(/^@/,'');
-    }
-    function normalizeTg(v){
-      if(!v) return null;
-      return v.toString().trim().replace(/^@/,'').toLowerCase();
+    if (tgUserFromLink && $tg && !$tg.value) {
+      $tg.value = tgUserFromLink.replace(/^@/,'');
     }
 
     /* Submit */
     const form=document.getElementById('regForm');
     form.addEventListener('submit', async (e) => {
-  e.preventDefault();
+      e.preventDefault();
 
-  const decks = [...form.querySelectorAll('input[name="decks"]:checked')].map(x => x.value);
-  const roles = [...form.querySelectorAll('input[name="roles"]:checked')].map(x => x.value);
-  const days  = [...form.querySelectorAll('input[name="days"]:checked')].map(x => x.value);
-  const times = [...form.querySelectorAll('input[name="times"]:checked')].map(x => x.value);
+      const decks = [...form.querySelectorAll('input[name="decks"]:checked')].map(x => x.value);
+      const roles = [...form.querySelectorAll('input[name="roles"]:checked')].map(x => x.value);
+      const days  = [...form.querySelectorAll('input[name="days"]:checked')].map(x => x.value);
+      const times = [...form.querySelectorAll('input[name="times"]:checked')].map(x => x.value);
 
-  const payload = {
-    clan: 'Феникс',
-    nickname: form.nickname.value.trim(),
-    telegram: form.telegram.value.trim(),
-    telegram_norm: (form.telegram.value || '').trim().replace(/^@/, '').toLowerCase() || null,
-    telegram_id: (new URLSearchParams(location.search).get('tg_id') ? Number(new URLSearchParams(location.search).get('tg_id')) : null),
-    birthdate: form.birthdate.value || null,
-    country: form.country.value.trim() || null,
-    city: form.city.value.trim() || null,
-    days, times,
-    experience: form.experience.value || null,
-    expectations: form.expect?.value.trim() || null,
-    partners: form.partners?.value.trim() || null,
-    conflicts: form.conflicts?.value.trim() || null,
-    decks, roles,
-    play_other: document.getElementById('play_other')?.checked || false,
-    clan_life: document.getElementById('clan_life')?.checked || false,
-    user_agent: navigator.userAgent || null,
-    created_at: new Date().toISOString()
-  };
+      const payload = {
+        clan: 'Феникс',
+        nickname: form.nickname.value.trim(),
+        telegram: form.telegram.value.trim(),
+        // !!! ВАЖНО: telegram_norm не отправляем — он генерируется в БД !!!
+        telegram_id: tgIdFromLink ? Number(tgIdFromLink) : null,
+        birthdate: form.birthdate.value || null,
+        country: form.country.value.trim() || null,
+        city: form.city.value.trim() || null,
+        days, times,
+        experience: form.experience.value || null,
+        expectations: form.expect?.value.trim() || null,
+        partners: form.partners?.value.trim() || null,
+        conflicts: form.conflicts?.value.trim() || null,
+        decks, roles,
+        play_other: document.getElementById('play_other')?.checked || false,
+        clan_life: document.getElementById('clan_life')?.checked || false,
+        user_agent: navigator.userAgent || null,
+        created_at: new Date().toISOString()
+      };
 
-  try {
-    if (!supabase) throw new Error('Supabase клиент не инициализирован.');
+      try {
+        if (!supabase) throw new Error('Supabase клиент не инициализирован.');
 
-    // 1) Создаём игрока и забираем id
-    const { data: playerRow, error: insErr } =
-      await supabase.from('rg_players').insert(payload).select('id').single();
-    if (insErr) throw insErr;
+        // 1) Вставляем игрока и берём его id
+        const { data: playerRow, error: insErr } =
+          await supabase.from('rg_players').insert(payload).select('id').single();
+        if (insErr) throw insErr;
 
-    // 2) Записываем согласия, уже с player_id
-    const { error: consErr } = await supabase.from('rg_consents').insert({
-      player_id: playerRow.id,                                 // <-- ВАЖНО
-      notify_ok: document.getElementById('notify_ok').checked,
-      rules_ok: document.getElementById('rules_ok').checked
+        // 2) Записываем согласия, уже с player_id
+        const { error: consErr } = await supabase.from('rg_consents').insert({
+          player_id: playerRow.id,
+          notify_ok: document.getElementById('notify_ok').checked,
+          rules_ok: document.getElementById('rules_ok').checked
+        });
+        if (consErr) throw consErr;
+
+        alert('Спасибо! Анкета отправлена.');
+      } catch (err) {
+        console.error(err);
+        const msg = err?.message || err?.error_description || 'Неизвестная ошибка';
+        alert('Ошибка отправки: ' + msg);
+      }
     });
-    if (consErr) throw consErr;
-
-    alert('Спасибо! Анкета отправлена.');
-  } catch (err) {
-    // покажем реальную причину
-    console.error(err);
-    const msg = err?.message || err?.error_description || 'Неизвестная ошибка';
-    alert('Ошибка отправки: ' + msg);
-  }
-});
 
     /* Админ мини-просмотр, если ?admin=1 */
     (function(){
