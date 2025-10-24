@@ -381,136 +381,142 @@
     renderChips('timesChips',TIMES,'times');
 
     // Supabase
-let supabase;
-(async () => {
-  const SUPABASE_URL = window.SUPABASE_URL;
-  const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-  const qs = new URLSearchParams(location.search);
-  const tgIdFromLink = qs.get("tg_id");
-  const tgUserFromLink = qs.get("tg") || qs.get("username") || qs.get("tg_username");
+    let supabase;
+    (async () => {
+      const SUPABASE_URL = window.SUPABASE_URL;
+      const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const tgField = document.getElementById("telegram");
-  if (tgUserFromLink && tgField && !tgField.value)
-    tgField.value = tgUserFromLink.replace(/^@/, "");
+      const qs = new URLSearchParams(location.search);
+      const tgIdFromLink = qs.get("tg_id"); // строка
+      const tgUserFromLink = qs.get("tg") || qs.get("username") || qs.get("tg_username");
 
-  async function refetchId(telegram_id, telegram) {
-    if (telegram_id) {
-      const { data } = await supabase
-        .from("rg_players")
-        .select("id")
-        .eq("telegram_id", telegram_id)
-        .limit(1)
-        .maybeSingle();
-      if (data?.id) return data.id;
-    }
-    if (telegram) {
-      const { data } = await supabase
-        .from("rg_players")
-        .select("id")
-        .eq("telegram", telegram)
-        .limit(1)
-        .maybeSingle();
-      if (data?.id) return data.id;
-    }
-    return null;
-  }
+      const tgField = document.getElementById("telegram");
+      if (tgUserFromLink && tgField && !tgField.value)
+        tgField.value = tgUserFromLink.replace(/^@/,"");
 
-  const form = document.getElementById("regForm");
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+      // нормализатор username
+      const norm = s => (s||"").trim().replace(/^@/,"").toLowerCase();
 
-    const decks = [...form.querySelectorAll('input[name="decks"]:checked')].map((x) => x.value);
-    const roles = [...form.querySelectorAll('input[name="roles"]:checked')].map((x) => x.value);
-    const days = [...form.querySelectorAll('input[name="days"]:checked')].map((x) => x.value);
-    const times = [...form.querySelectorAll('input[name="times"]:checked')].map((x) => x.value);
+      const form = document.getElementById("regForm");
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-    const telegram = form.telegram.value.trim();
-    const telegram_id = /^\d+$/.test(tgIdFromLink) ? Number(tgIdFromLink) : null;
+        const decks = [...form.querySelectorAll('input[name="decks"]:checked')].map(x=>x.value);
+        const roles = [...form.querySelectorAll('input[name="roles"]:checked')].map(x=>x.value);
+        const days  = [...form.querySelectorAll('input[name="days"]:checked')].map(x=>x.value);
+        const times = [...form.querySelectorAll('input[name="times"]:checked')].map(x=>x.value);
 
-    const payload = {
-      clan: "Феникс",
-      nickname: form.nickname.value.trim(),
-      telegram: telegram || null,
-      telegram_id,
-      birthdate: form.birthdate.value || null,
-      country: form.country.value.trim() || null,
-      city: form.city.value.trim() || null,
-      days,
-      times,
-      experience: form.experience.value || null,
-      expectations: form.expect?.value.trim() || null,
-      partners: form.partners?.value.trim() || null,
-      conflicts: form.conflicts?.value.trim() || null,
-      decks,
-      roles,
-      play_other: document.getElementById("play_other")?.checked || false,
-      clan_life: document.getElementById("clan_life")?.checked || false,
-      user_agent: navigator.userAgent,
-      updated_at: new Date().toISOString(),
-    };
+        const telegramRaw = form.telegram.value;
+        const telegram = telegramRaw ? telegramRaw.trim() : null;
+        const telegram_id = /^\d+$/.test(tgIdFromLink||"") ? Number(tgIdFromLink) : null;
 
-    try {
-      console.log("Payload:", payload);
+        const payload = {
+          clan: "Феникс",
+          nickname: form.nickname.value.trim(),
+          telegram: telegram || null,            // не трогаем telegram_norm — он вычисляемый в БД
+          telegram_id,                           // может быть null
+          birthdate: form.birthdate.value || null,
+          country: form.country.value.trim() || null,
+          city: form.city.value.trim() || null,
+          days, times, decks, roles,             // массивы text[]
+          experience: form.experience.value || null,
+          expectations: form.expect?.value.trim() || null,
+          partners: form.partners?.value.trim() || null,
+          conflicts: form.conflicts?.value.trim() || null,
+          play_other: document.getElementById("play_other")?.checked || false,
+          clan_life:  document.getElementById("clan_life")?.checked  || false,
+          user_agent: navigator.userAgent,
+          updated_at: new Date().toISOString(),
+        };
 
-      // Проверяем существующую запись
-      let { data: existing } = await supabase
-        .from("rg_players")
-        .select("id")
-        .eq("telegram", telegram)
-        .limit(1)
-        .maybeSingle();
+        try {
+          console.log("Payload:", payload);
 
-      let playerId = existing?.id || null;
+          // 1) Пытаемся найти существующую запись: сперва по telegram_id, затем по username (без учёта регистра)
+          let playerId = null;
 
-      if (playerId) {
-        console.log("Updating existing:", playerId);
-        const { error: updErr } = await supabase
-          .from("rg_players")
-          .update(payload)
-          .eq("id", playerId);
-        if (updErr) throw updErr;
+          if (telegram_id) {
+            const { data: byId, error: e1 } = await supabase
+              .from("rg_players")
+              .select("id")
+              .eq("telegram_id", telegram_id)
+              .maybeSingle();
+            if (e1) throw e1;
+            playerId = byId?.id || null;
+          }
 
-  // Проверим, что реально обновилось
-        const { data: checkData, error: checkErr } = await supabase
-          .from("rg_players")
-          .select("*")
-          .eq("id", playerId)
-          .maybeSingle();
-      if (checkErr) throw checkErr;
-        console.log("Updated row:", checkData);
-      } else {
-        console.log("Inserting new record");
-        const { data, error } = await supabase
-          .from("rg_players")
-          .insert({ ...payload, created_at: new Date().toISOString() })
-          .select("id")
-          .maybeSingle();
-        if (error) throw error;
-        playerId = data?.id || (await refetchId(telegram_id, telegram));
-      }
+          if (!playerId && telegram) {
+            const { data: byName, error: e2 } = await supabase
+              .from("rg_players")
+              .select("id")
+              .ilike("telegram", norm(telegram)) // регистронезависимый поиск
+              .maybeSingle();
+            if (e2) throw e2;
+            playerId = byName?.id || null;
+          }
 
-      if (!playerId) throw new Error("Не удалось определить ID игрока после сохранения.");
+          if (playerId) {
+            // 2) update по id
+            const { error: updErr } = await supabase
+              .from("rg_players")
+              .update(payload)
+              .eq("id", playerId);
+            if (updErr) throw updErr;
+          } else {
+            // 3) insert, с обработкой возможного конфликта по уникальному индексу
+            const { data: ins, error: insErr } = await supabase
+              .from("rg_players")
+              .insert({ ...payload, created_at: new Date().toISOString() })
+              .select("id")
+              .maybeSingle();
 
-      // Upsert согласий
-      const { error: consErr } = await supabase.from("rg_consents").upsert(
-        {
-          player_id: playerId,
-          notify_ok: document.getElementById("notify_ok").checked,
-          rules_ok: document.getElementById("rules_ok").checked,
-        },
-        { onConflict: "player_id" }
-      );
-      if (consErr) throw consErr;
+            if (insErr && insErr.code === "23505") {
+              // конфликт уникальности — пытаемся «добить» апдейтом
+              // сначала по telegram_id, затем по username
+              let updQ = supabase.from("rg_players").update(payload);
+              if (telegram_id) {
+                updQ = updQ.eq("telegram_id", telegram_id);
+              } else if (telegram) {
+                updQ = updQ.ilike("telegram", norm(telegram));
+              }
+              const { error: fixErr } = await updQ;
+              if (fixErr) throw fixErr;
+            } else if (insErr) {
+              throw insErr;
+            } else {
+              playerId = ins?.id || playerId;
+            }
+          }
 
-      alert("✅ Анкета успешно сохранена!");
-    } catch (err) {
-      console.error("Ошибка Supabase:", err);
-      alert("Ошибка: " + (err.message || "Неизвестная ошибка"));
-    }
-  });
-})();
+          // 4) Получаем id, если его ещё нет (страховка)
+          if (!playerId) {
+            const q = supabase.from("rg_players").select("id").limit(1);
+            let sel;
+            if (telegram_id) sel = await q.eq("telegram_id", telegram_id).maybeSingle();
+            else if (telegram) sel = await q.ilike("telegram", norm(telegram)).maybeSingle();
+            playerId = sel?.data?.id || null;
+          }
+          if (!playerId) throw new Error("Не удалось определить ID игрока после сохранения.");
+
+          // 5) upsert согласий
+          const { error: consErr } = await supabase.from("rg_consents").upsert(
+            {
+              player_id: playerId,
+              notify_ok: document.getElementById("notify_ok").checked,
+              rules_ok:  document.getElementById("rules_ok").checked,
+            },
+            { onConflict: "player_id" }
+          );
+          if (consErr) throw consErr;
+
+          alert("✅ Анкета успешно сохранена!");
+        } catch (err) {
+          console.error("Ошибка Supabase:", err);
+          alert("Ошибка: " + (err?.message || "Неизвестная ошибка"));
+        }
+      });
+    })();
 
     // админ-вид
     (function(){
