@@ -466,14 +466,20 @@ let supabase;
 
       if (playerId) {
         console.log("Updating existing:", playerId);
-        const { data, error } = await supabase
+        const { error: updErr } = await supabase
           .from("rg_players")
           .update(payload)
+          .eq("id", playerId);
+        if (updErr) throw updErr;
+
+  // Проверим, что реально обновилось
+        const { data: checkData, error: checkErr } = await supabase
+          .from("rg_players")
+          .select("*")
           .eq("id", playerId)
-          .select("id")
           .maybeSingle();
-        if (error) throw error;
-        playerId = data?.id || playerId;
+      if (checkErr) throw checkErr;
+        console.log("Updated row:", checkData);
       } else {
         console.log("Inserting new record");
         const { data, error } = await supabase
