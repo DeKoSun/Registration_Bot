@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ФЕНИКС — регистрация игрока</title>
 
-  <!-- PUBLIC ключи Supabase (можно оставить как есть) -->
+  <!-- PUBLIC ключи Supabase -->
   <script>
     window.SUPABASE_URL = window.SUPABASE_URL || "https://ucdvtuifhmxnygibykhl.supabase.co";
     window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjZHZ0dWlmaG14bnlnaWJ5a2hsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc4MDYsImV4cCI6MjA3NTQ4MzgwNn0.G7RdjUdwwOnjnAuWi0FwjqUoWAr4vutqUN7NUMmCIgM";
@@ -318,7 +318,6 @@
       const pref=matchMedia('(prefers-reduced-motion: reduce)');
       const apply=e=>{ if(e.matches) v.pause(); else v.play().catch(()=>{}); };
       apply(pref); pref.addEventListener?.('change',apply);
-      document.addEventListener('visibilitychange',()=>{ if(document.hidden) v.pause(); else v.play().catch(()=>{}); });
     })();
 
     // анти-кеш для GIF при локальном открытии
@@ -393,17 +392,6 @@
     const $tg = document.getElementById('telegram');
     if (tgUserFromLink && $tg && !$tg.value) $tg.value = tgUserFromLink.replace(/^@/,'');
 
-    // нормализация username (как в БД)
-    function normUsername(s){
-      if(!s) return null;
-      return s.toString().trim()
-        .replace(/^@/,'')
-        .toLowerCase()
-        .replace(/[^\w\.]/g,'')      // только [a-z0-9_ .]
-        .replace(/\.+/g,'.')          // схлопываем точки
-        .replace(/^\.|\.$/g,'') || null;
-    }
-
     // submit
     const form=document.getElementById('regForm');
     form.addEventListener('submit', async (e) => {
@@ -415,15 +403,14 @@
       const times = [...form.querySelectorAll('input[name="times"]:checked')].map(x => x.value);
 
       const telegramRaw = form.telegram.value.trim();
-      const telegram_norm = normUsername(telegramRaw);
       const telegram_id = tgIdFromLink ? Number(tgIdFromLink) : null;
 
-      const payload = {
+      // общий payload (без telegram_norm — чтобы не конфликтовать с настройками колонки в БД)
+      const basePayload = {
         clan: 'Феникс',
         nickname: form.nickname.value.trim(),
-        telegram: telegramRaw,
-        telegram_norm,           // нормализованный username — обязателен, чтобы не было ошибки NOT DEFAULT
-        telegram_id,             // если диплинк был — используем его для upsert по tg_id
+        telegram: telegramRaw || null,
+        telegram_id: telegram_id ?? null,
         birthdate: form.birthdate.value || null,
         country: form.country.value.trim() || null,
         city: form.city.value.trim() || null,
@@ -436,33 +423,69 @@
         play_other: document.getElementById('play_other')?.checked || false,
         clan_life: document.getElementById('clan_life')?.checked || false,
         user_agent: navigator.userAgent || null,
-        updated_at: new Date().toISOString(),
-        created_at: new Date().toISOString()
+        ip_address: null, // при желании можно поставить серверное заполенение
+        updated_at: new Date().toISOString()
       };
-
-      // какой конфликтный ключ использовать для upsert
-      const onConflict =
-        telegram_id ? 'telegram_id' :
-        (telegram_norm ? 'telegram_norm' : null);
 
       try {
         if (!supabase) throw new Error('Supabase клиент не инициализирован.');
 
-        // upsert игрока
-        let q = supabase.from('rg_players').upsert(payload, {
-          onConflict, ignoreDuplicates: false
-        }).select('id').single();
+        // 1) пробуем найти существующую запись: по tg_id, иначе по telegram (точное совпадение)
+        let existing = null;
 
-        const { data: playerRow, error: upErr } = await q;
-        if (upErr) throw upErr;
+        if (telegram_id) {
+          const { data, error } = await supabase
+            .from('rg_players')
+            .select('id')
+            .eq('telegram_id', telegram_id)
+            .maybeSingle();
+          if (error) throw error;
+          existing = data;
+        }
 
-        // upsert согласий по player_id
+        if (!existing && telegramRaw) {
+          const { data, error } = await supabase
+            .from('rg_players')
+            .select('id')
+            .eq('telegram', telegramRaw)
+            .maybeSingle();
+          if (error) throw error;
+          existing = data;
+        }
+
+        let playerId;
+
+        if (existing && existing.id) {
+          // 2а) обновляем
+          const { data, error } = await supabase
+            .from('rg_players')
+            .update(basePayload)
+            .eq('id', existing.id)
+            .select('id')
+            .single();
+          if (error) throw error;
+          playerId = data.id;
+        } else {
+          // 2б) вставляем
+          const payload = {
+            ...basePayload,
+            created_at: new Date().toISOString()
+          };
+          const { data, error } = await supabase
+            .from('rg_players')
+            .insert(payload)
+            .select('id')
+            .single();
+          if (error) throw error;
+          playerId = data.id;
+        }
+
+        // 3) upsert согласий по player_id
         const { error: consErr } = await supabase.from('rg_consents').upsert({
-          player_id: playerRow.id,
+          player_id: playerId,
           notify_ok: document.getElementById('notify_ok').checked,
           rules_ok: document.getElementById('rules_ok').checked
         }, { onConflict: 'player_id', ignoreDuplicates: false });
-
         if (consErr) throw consErr;
 
         alert('Спасибо! Анкета сохранена.');
@@ -491,8 +514,7 @@
         const rows = data.filter(r=>{
           if(!q) return true;
           return (r.nickname||'').toLowerCase().includes(q)
-              || (r.telegram||'').toLowerCase().includes(q)
-              || (r.telegram_norm||'').toLowerCase().includes(q);
+              || (r.telegram||'').toLowerCase().includes(q);
         });
         const html = `
           <table style="width:100%; border-collapse:collapse">
