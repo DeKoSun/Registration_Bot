@@ -405,7 +405,7 @@
       const telegramRaw = form.telegram.value.trim();
       const telegram_id = tgIdFromLink ? Number(tgIdFromLink) : null;
 
-      // общий payload (без telegram_norm — чтобы не конфликтовать с настройками колонки в БД)
+      // общий payload (НЕ отправляем telegram_norm!)
       const basePayload = {
         clan: 'Феникс',
         nickname: form.nickname.value.trim(),
@@ -423,14 +423,14 @@
         play_other: document.getElementById('play_other')?.checked || false,
         clan_life: document.getElementById('clan_life')?.checked || false,
         user_agent: navigator.userAgent || null,
-        ip_address: null, // при желании можно поставить серверное заполенение
+        ip_address: null,
         updated_at: new Date().toISOString()
       };
 
       try {
         if (!supabase) throw new Error('Supabase клиент не инициализирован.');
 
-        // 1) пробуем найти существующую запись: по tg_id, иначе по telegram (точное совпадение)
+        // 1) ищем существующую запись: сначала по tg_id, затем по telegram (точное совпадение)
         let existing = null;
 
         if (telegram_id) {
@@ -438,6 +438,7 @@
             .from('rg_players')
             .select('id')
             .eq('telegram_id', telegram_id)
+            .limit(1)
             .maybeSingle();
           if (error) throw error;
           existing = data;
@@ -448,6 +449,7 @@
             .from('rg_players')
             .select('id')
             .eq('telegram', telegramRaw)
+            .limit(1)
             .maybeSingle();
           if (error) throw error;
           existing = data;
@@ -456,36 +458,40 @@
         let playerId;
 
         if (existing && existing.id) {
-          // 2а) обновляем
+          // 2а) обновляем (возвратим одну строку безопасно)
           const { data, error } = await supabase
             .from('rg_players')
             .update(basePayload)
             .eq('id', existing.id)
             .select('id')
-            .single();
+            .limit(1)
+            .maybeSingle();
           if (error) throw error;
           playerId = data.id;
         } else {
           // 2б) вставляем
-          const payload = {
-            ...basePayload,
-            created_at: new Date().toISOString()
-          };
+          const payload = { ...basePayload, created_at: new Date().toISOString() };
           const { data, error } = await supabase
             .from('rg_players')
             .insert(payload)
             .select('id')
-            .single();
+            .limit(1)
+            .maybeSingle();
           if (error) throw error;
           playerId = data.id;
         }
 
         // 3) upsert согласий по player_id
-        const { error: consErr } = await supabase.from('rg_consents').upsert({
-          player_id: playerId,
-          notify_ok: document.getElementById('notify_ok').checked,
-          rules_ok: document.getElementById('rules_ok').checked
-        }, { onConflict: 'player_id', ignoreDuplicates: false });
+        const { error: consErr } = await supabase
+          .from('rg_consents')
+          .upsert(
+            {
+              player_id: playerId,
+              notify_ok: document.getElementById('notify_ok').checked,
+              rules_ok: document.getElementById('rules_ok').checked
+            },
+            { onConflict: 'player_id', ignoreDuplicates: false }
+          );
         if (consErr) throw consErr;
 
         alert('Спасибо! Анкета сохранена.');
