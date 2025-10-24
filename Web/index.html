@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ФЕНИКС — регистрация игрока</title>
 
-  <!-- Публичные ключи Supabase -->
+  <!-- PUBLIC ключи Supabase (можно оставить как есть) -->
   <script>
     window.SUPABASE_URL = window.SUPABASE_URL || "https://ucdvtuifhmxnygibykhl.supabase.co";
     window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjZHZ0dWlmaG14bnlnaWJ5a2hsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc4MDYsImV4cCI6MjA3NTQ4MzgwNn0.G7RdjUdwwOnjnAuWi0FwjqUoWAr4vutqUN7NUMmCIgM";
@@ -422,8 +422,8 @@
         clan: 'Феникс',
         nickname: form.nickname.value.trim(),
         telegram: telegramRaw,
-        telegram_norm,           // теперь отправляем, чтобы сработал ON CONFLICT по username
-        telegram_id,             // и по tg_id, если был диплинк
+        telegram_norm,           // нормализованный username — обязателен, чтобы не было ошибки NOT DEFAULT
+        telegram_id,             // если диплинк был — используем его для upsert по tg_id
         birthdate: form.birthdate.value || null,
         country: form.country.value.trim() || null,
         city: form.city.value.trim() || null,
@@ -436,7 +436,7 @@
         play_other: document.getElementById('play_other')?.checked || false,
         clan_life: document.getElementById('clan_life')?.checked || false,
         user_agent: navigator.userAgent || null,
-        updated_at: new Date().toISOString(),   // для upsert
+        updated_at: new Date().toISOString(),
         created_at: new Date().toISOString()
       };
 
@@ -456,7 +456,7 @@
         const { data: playerRow, error: upErr } = await q;
         if (upErr) throw upErr;
 
-        // upsert согласий по player_id (уникальность по player_id)
+        // upsert согласий по player_id
         const { error: consErr } = await supabase.from('rg_consents').upsert({
           player_id: playerRow.id,
           notify_ok: document.getElementById('notify_ok').checked,
