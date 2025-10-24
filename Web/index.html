@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ФЕНИКС — регистрация игрока</title>
 
-  <!-- (опционально) плейсхолдеры Supabase -->
+  <!-- Твои ключи Supabase можно положить сюда глобально (или оставить как есть, если уже подставляешь вне файла) -->
   <script>
     window.SUPABASE_URL = window.SUPABASE_URL || "https://ucdvtuifhmxnygibykhl.supabase.co";
     window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjZHZ0dWlmaG14bnlnaWJ5a2hsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc4MDYsImV4cCI6MjA3NTQ4MzgwNn0.G7RdjUdwwOnjnAuWi0FwjqUoWAr4vutqUN7NUMmCIgM";
@@ -29,7 +29,7 @@
       font:500 16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
     }
 
-    /* Фиксированный фон (видео с постером) */
+    /* Фиксированный фон (видео + постер) */
     .bg-video{position:fixed; inset:0; z-index:100; pointer-events:none; display:grid; place-items:center}
     .bg-video video{width:100vw; height:100vh; object-fit:cover}
     .bg-video::after{
@@ -184,7 +184,6 @@
         <!-- Яйцо (GIF) -->
         <div class="egg-wrap">
           <div class="egg">
-            <!-- подменяем src в JS на icons/egg.gif?cache-bust -->
             <img id="egggif" src="icons/egg.gif" alt="Яйцо феникса" loading="eager" decoding="sync">
           </div>
         </div>
@@ -239,7 +238,7 @@
             <label class="chip"><input type="checkbox" name="decks" value="Орк"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/Orc.png')"></div><span class="label-inline">Орк</span></label>
             <label class="chip"><input type="checkbox" name="decks" value="Упряжка"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/Sled.png')"></div><span class="label-inline">Упряжка</span></label>
             <label class="chip"><input type="checkbox" name="decks" value="Гном"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/Dwarf.png')"></div><span class="label-inline">Гном</span></label>
-            <!-- Звёздный — твой путь, не меняю -->
+            <!-- «Звёздный» — не трогаю -->
             <label class="chip"><input type="checkbox" name="decks" value="Звёздный"><span class="toggler"></span><div class="icon-img" style="background-image:url('icons/alien.png')"></div><span class="label-inline">Звёздный</span></label>
           </div>
         </div>
@@ -333,7 +332,6 @@
       const img=document.getElementById('egggif');
       if(!img) return;
       const base=img.getAttribute('src') || 'icons/egg.gif';
-      // если уже с параметром – не трогаем
       if(!/\?/.test(base)) img.src = base + '?_=' + Date.now();
     })();
 
@@ -393,38 +391,62 @@
     const SUPABASE_URL=window.SUPABASE_URL, SUPABASE_ANON_KEY=window.SUPABASE_ANON_KEY;
     const supabase=(SUPABASE_URL && !SUPABASE_URL.includes('YOUR_')) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
+    /* ==== Считывание tg_id и нормализация username (для telegram_norm) ==== */
+    const qs = new URLSearchParams(location.search);
+    const tgIdRaw = qs.get('tg_id'); // телеграм user id из диплинка бота
+    const tgUsernameParam = qs.get('tg') || qs.get('username') || qs.get('tg_username');
+
+    const $tg = document.getElementById('telegram');
+    if (tgUsernameParam && $tg && !$tg.value) {
+      $tg.value = tgUsernameParam.replace(/^@/,'');
+    }
+    function normalizeTg(v){
+      if(!v) return null;
+      return v.toString().trim().replace(/^@/,'').toLowerCase();
+    }
+
     /* Submit */
     const form=document.getElementById('regForm');
     form.addEventListener('submit',async(e)=>{
       e.preventDefault();
+
       const decks=[...form.querySelectorAll('input[name="decks"]:checked')].map(x=>x.value);
       const roles=[...form.querySelectorAll('input[name="roles"]:checked')].map(x=>x.value);
       const days=[...form.querySelectorAll('input[name="days"]:checked')].map(x=>x.value);
       const times=[...form.querySelectorAll('input[name="times"]:checked')].map(x=>x.value);
+
       const payload={
         clan:'Феникс',
         nickname:form.nickname.value.trim(),
-        telegram:form.telegram.value.trim(),
+        telegram:form.telegram.value.trim(),                  // как ввёл пользователь
+        telegram_norm: normalizeTg(form.telegram.value),      // нормализованная версия (lowercase, без @)
+        telegram_id: tgIdRaw ? Number(tgIdRaw) : null,        // int8, если пришёл из диплинка
         birthdate:form.birthdate.value||null,
         country:form.country.value.trim()||null,
         city:form.city.value.trim()||null,
         days,times,
-        expectations:form.expect?.value.trim()||null,
         experience:form.experience.value||null,
+        expectations:form.expect?.value.trim()||null,
         partners:form.partners?.value.trim()||null,
         conflicts:form.conflicts?.value.trim()||null,
         decks, roles,
         play_other:document.getElementById('play_other')?.checked||false,
         clan_life:document.getElementById('clan_life')?.checked||false,
+        user_agent: navigator.userAgent || null,
         created_at:new Date().toISOString()
       };
+
       try{
         if(supabase){
-          const {error:e1}=await supabase.from('rg_players').insert(payload); if(e1) throw e1;
+          // форма пишет новую запись (бот уже делает upsert — пусть остаётся так)
+          const {error:e1}=await supabase.from('rg_players').insert(payload);
+          if(e1) throw e1;
+
           const {error:e2}=await supabase.from('rg_consents').insert({
             notify_ok:document.getElementById('notify_ok').checked,
             rules_ok:document.getElementById('rules_ok').checked
-          }); if(e2) console.warn('Consent warn:',e2.message);
+          });
+          if(e2) console.warn('Consent warn:',e2.message);
         }
         alert('Спасибо! Анкета отправлена.');
       }catch(err){
@@ -432,6 +454,60 @@
         alert('Ошибка отправки! Попробуй ещё раз или свяжись с админом.');
       }
     });
+
+    /* Админ мини-просмотр, если ?admin=1 */
+    (function(){
+      const isAdmin = new URLSearchParams(location.search).get('admin')==='1';
+      if(!isAdmin) return;
+      document.getElementById('admin').style.display='block';
+      if(!supabase){ document.getElementById('grid').textContent = 'Нет клиента Supabase'; return; }
+
+      async function load(){
+        const {data, error} = await supabase
+          .from('rg_players')
+          .select('*')
+          .order('created_at',{ascending:false})
+          .limit(300);
+        if(error){ document.getElementById('grid').textContent = error.message; return; }
+        const q = (document.getElementById('search').value||'').trim().toLowerCase();
+        const rows = data.filter(r=>{
+          if(!q) return true;
+          return (r.nickname||'').toLowerCase().includes(q)
+              || (r.telegram||'').toLowerCase().includes(q)
+              || (r.telegram_norm||'').toLowerCase().includes(q);
+        });
+        const html = `
+          <table style="width:100%; border-collapse:collapse">
+            <thead>
+              <tr>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Ник</th>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Telegram</th>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">tg_id</th>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Дни</th>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Время</th>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Опыт</th>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Создано</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(r=>`
+                <tr>
+                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${r.nickname||''}</td>
+                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">@${r.telegram||''}</td>
+                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${r.telegram_id ?? ''}</td>
+                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${(r.days||[]).join(', ')}</td>
+                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${(r.times||[]).join(', ')}</td>
+                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${r.experience||''}</td>
+                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${r.created_at ? new Date(r.created_at).toLocaleString() : ''}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>`;
+        document.getElementById('grid').innerHTML = html;
+      }
+      document.getElementById('reload').addEventListener('click',load);
+      document.getElementById('search').addEventListener('input',load);
+      load();
+    })();
   })();
   </script>
 </body>
