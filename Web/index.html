@@ -414,12 +414,12 @@
         const payload = {
           clan: "Феникс",
           nickname: form.nickname.value.trim(),
-          telegram: telegram || null,            // не трогаем telegram_norm — он вычисляемый в БД
+          telegram: telegram || null,            // telegram_norm считает БД
           telegram_id,                           // может быть null
           birthdate: form.birthdate.value || null,
           country: form.country.value.trim() || null,
           city: form.city.value.trim() || null,
-          days, times, decks, roles,             // массивы text[]
+          days, times, decks, roles,             // text[]
           experience: form.experience.value || null,
           expectations: form.expect?.value.trim() || null,
           partners: form.partners?.value.trim() || null,
@@ -433,7 +433,7 @@
         try {
           console.log("Payload:", payload);
 
-          // 1) Пытаемся найти существующую запись: сперва по telegram_id, затем по username (без учёта регистра)
+          // 1) Пытаемся найти существующую запись: сперва по telegram_id, затем по telegram_norm (точно)
           let playerId = null;
 
           if (telegram_id) {
@@ -450,7 +450,7 @@
             const { data: byName, error: e2 } = await supabase
               .from("rg_players")
               .select("id")
-              .ilike("telegram", norm(telegram)) // регистронезависимый поиск
+              .eq("telegram_norm", norm(telegram))   // <── точное сравнение с нормализованным
               .maybeSingle();
             if (e2) throw e2;
             playerId = byName?.id || null;
@@ -464,7 +464,7 @@
               .eq("id", playerId);
             if (updErr) throw updErr;
           } else {
-            // 3) insert, с обработкой возможного конфликта по уникальному индексу
+            // 3) insert
             const { data: ins, error: insErr } = await supabase
               .from("rg_players")
               .insert({ ...payload, created_at: new Date().toISOString() })
@@ -472,13 +472,12 @@
               .maybeSingle();
 
             if (insErr && insErr.code === "23505") {
-              // конфликт уникальности — пытаемся «добить» апдейтом
-              // сначала по telegram_id, затем по username
+              // Конфликт уникальности — «добиваем» апдейтом тем же критерием
               let updQ = supabase.from("rg_players").update(payload);
               if (telegram_id) {
                 updQ = updQ.eq("telegram_id", telegram_id);
               } else if (telegram) {
-                updQ = updQ.ilike("telegram", norm(telegram));
+                updQ = updQ.eq("telegram_norm", norm(telegram));
               }
               const { error: fixErr } = await updQ;
               if (fixErr) throw fixErr;
@@ -494,7 +493,7 @@
             const q = supabase.from("rg_players").select("id").limit(1);
             let sel;
             if (telegram_id) sel = await q.eq("telegram_id", telegram_id).maybeSingle();
-            else if (telegram) sel = await q.ilike("telegram", norm(telegram)).maybeSingle();
+            else if (telegram) sel = await q.eq("telegram_norm", norm(telegram)).maybeSingle();
             playerId = sel?.data?.id || null;
           }
           if (!playerId) throw new Error("Не удалось определить ID игрока после сохранения.");
@@ -536,7 +535,8 @@
         const rows = data.filter(r=>{
           if(!q) return true;
           return (r.nickname||'').toLowerCase().includes(q)
-              || (r.telegram||'').toLowerCase().includes(q);
+              || (r.telegram||'').toLowerCase().includes(q)
+              || (r.telegram_norm||'').toLowerCase().includes(q);
         });
         const html = `
           <table style="width:100%; border-collapse:collapse">
