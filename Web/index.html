@@ -155,6 +155,50 @@
     @media (prefers-reduced-motion:reduce){
       .bg-video video{animation:none}
     }
+
+    /* ======= Phoenix toasts (центр, без кнопки, 10 сек) ======= */
+    #phoenix-toasts{
+      position:fixed; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      pointer-events:none; z-index:9999; padding:24px;
+    }
+    .toast{
+      --dur:10000ms; /* длительность жизни */
+      width:min(92vw,560px);
+      pointer-events:auto;
+      color:#fff; border-radius:16px;
+      padding:20px 24px;
+      box-shadow:0 18px 60px rgba(0,0,0,.35), inset 0 0 24px rgba(255,255,255,.08);
+      backdrop-filter: blur(4px);
+      position:relative; overflow:hidden;
+      font:600 16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial;
+      animation:toast-in .35s ease, toast-out .4s ease var(--dur) forwards;
+      text-align:center;
+    }
+    .toast.success{
+      background: radial-gradient(120% 120% at 0% 0%, #1f4d2c 0%, #0b1a10 55%),
+                  linear-gradient(90deg,#00e676,#00c853);
+    }
+    .toast.info{
+      background: radial-gradient(120% 120% at 0% 0%, #0f2a66 0%, #0a1226 55%),
+                  linear-gradient(90deg,#448aff,#2962ff);
+    }
+    .toast.error{
+      background: radial-gradient(120% 120% at 0% 0%, #4d1010 0%, #1a0b0b 55%),
+                  linear-gradient(90deg,#ff5252,#d50000);
+    }
+    .toast::after{
+      content:""; position:absolute; left:0; right:0; bottom:0; height:3px;
+      background:rgba(255,255,255,.55);
+      transform-origin:left; transform:scaleX(1);
+      animation:bar var(--dur) linear forwards;
+      mix-blend-mode:soft-light;
+    }
+    @keyframes toast-in{from{transform:translateY(14px) scale(.98);opacity:0} to{transform:translateY(0) scale(1);opacity:1}}
+    @keyframes toast-out{to{opacity:0; transform:translateY(10px) scale(.98)}}
+    @keyframes bar{to{transform:scaleX(0)}}
+    #phoenix-toasts.stack{align-items:flex-start; justify-content:center}
+    #phoenix-toasts.stack .toast{margin-top:10px}
   </style>
 </head>
 <body>
@@ -307,6 +351,9 @@
     </div>
   </div>
 
+  <!-- 🔔 Phoenix toasts container -->
+  <div id="phoenix-toasts" aria-live="polite" aria-atomic="true"></div>
+
   <script>
   (function(){
     if (window.__PHOENIX_BOOTED__) return;
@@ -380,6 +427,27 @@
     renderChips('daysChips',DAYS,'days');
     renderChips('timesChips',TIMES,'times');
 
+    /* ======= Toasts helpers ======= */
+    function showMessage(text, type='info', ms=10000){
+      const host = document.getElementById('phoenix-toasts');
+      if(!host) return alert(text);
+      host.classList.toggle('stack', host.children.length > 0);
+
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.style.setProperty('--dur', `${ms}ms`);
+      el.role = 'status';
+      el.innerHTML = `<div>${text}</div>`;
+      host.appendChild(el);
+
+      setTimeout(()=>{ el.remove(); }, ms + 450);
+    }
+    const phoenix = {
+      welcome(){ showMessage("🕊️ Пламя ФЕНИКСа приняло тебя! Добро пожаловать в семью, воин света!", "success"); },
+      updated(){ showMessage("🔥 Твоя анкета возродилась из пепла — данные успешно обновлены!", "info"); },
+      oops(){ showMessage("💀 Ошибка судьбы! Обратись к Хранителю огня @DeKo_Sun.", "error"); }
+    };
+
     // Supabase
     let supabase;
     (async () => {
@@ -395,7 +463,6 @@
       if (tgUserFromLink && tgField && !tgField.value)
         tgField.value = tgUserFromLink.replace(/^@/,"");
 
-      // нормализатор username
       const norm = s => (s||"").trim().replace(/^@/,"").toLowerCase();
 
       const form = document.getElementById("regForm");
@@ -414,12 +481,12 @@
         const payload = {
           clan: "Феникс",
           nickname: form.nickname.value.trim(),
-          telegram: telegram || null,            // telegram_norm считает БД
-          telegram_id,                           // может быть null
+          telegram: telegram || null,
+          telegram_id,
           birthdate: form.birthdate.value || null,
           country: form.country.value.trim() || null,
           city: form.city.value.trim() || null,
-          days, times, decks, roles,             // text[]
+          days, times, decks, roles,
           experience: form.experience.value || null,
           expectations: form.expect?.value.trim() || null,
           partners: form.partners?.value.trim() || null,
@@ -431,10 +498,8 @@
         };
 
         try {
-          console.log("Payload:", payload);
-
-          // 1) Пытаемся найти существующую запись: сперва по telegram_id, затем по telegram_norm (точно)
           let playerId = null;
+          let didUpdate = false;
 
           if (telegram_id) {
             const { data: byId, error: e1 } = await supabase
@@ -450,21 +515,20 @@
             const { data: byName, error: e2 } = await supabase
               .from("rg_players")
               .select("id")
-              .eq("telegram_norm", norm(telegram))   // <── точное сравнение с нормализованным
+              .eq("telegram_norm", norm(telegram))
               .maybeSingle();
             if (e2) throw e2;
             playerId = byName?.id || null;
           }
 
           if (playerId) {
-            // 2) update по id
             const { error: updErr } = await supabase
               .from("rg_players")
               .update(payload)
               .eq("id", playerId);
             if (updErr) throw updErr;
+            didUpdate = true;
           } else {
-            // 3) insert
             const { data: ins, error: insErr } = await supabase
               .from("rg_players")
               .insert({ ...payload, created_at: new Date().toISOString() })
@@ -472,15 +536,12 @@
               .maybeSingle();
 
             if (insErr && insErr.code === "23505") {
-              // Конфликт уникальности — «добиваем» апдейтом тем же критерием
               let updQ = supabase.from("rg_players").update(payload);
-              if (telegram_id) {
-                updQ = updQ.eq("telegram_id", telegram_id);
-              } else if (telegram) {
-                updQ = updQ.eq("telegram_norm", norm(telegram));
-              }
+              if (telegram_id) updQ = updQ.eq("telegram_id", telegram_id);
+              else if (telegram) updQ = updQ.eq("telegram_norm", norm(telegram));
               const { error: fixErr } = await updQ;
               if (fixErr) throw fixErr;
+              didUpdate = true;
             } else if (insErr) {
               throw insErr;
             } else {
@@ -488,7 +549,6 @@
             }
           }
 
-          // 4) Получаем id, если его ещё нет (страховка)
           if (!playerId) {
             const q = supabase.from("rg_players").select("id").limit(1);
             let sel;
@@ -498,7 +558,6 @@
           }
           if (!playerId) throw new Error("Не удалось определить ID игрока после сохранения.");
 
-          // 5) upsert согласий
           const { error: consErr } = await supabase.from("rg_consents").upsert(
             {
               player_id: playerId,
@@ -509,10 +568,13 @@
           );
           if (consErr) throw consErr;
 
-          alert("✅ Анкета успешно сохранена!");
+          // красивые уведомления
+          if (didUpdate) phoenix.updated();
+          else phoenix.welcome();
+
         } catch (err) {
           console.error("Ошибка Supabase:", err);
-          alert("Ошибка: " + (err?.message || "Неизвестная ошибка"));
+          phoenix.oops();
         }
       });
     })();
