@@ -21,6 +21,7 @@
       --accent:#ff6a00; --accent-2:#ff9f43;
       --radius:20px;
       --shadow:0 10px 30px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.04);
+      --ok:#00c853; --info:#2962ff; --err:#d50000;
     }
     html,body{height:100%} *,*::before,*::after{box-sizing:border-box}
     body{
@@ -53,6 +54,7 @@
       background:linear-gradient(180deg, rgba(20,25,35,.72), rgba(12,16,22,.88));
       border:1px solid rgba(255,255,255,.06); box-shadow:var(--shadow);
       backdrop-filter:blur(10px) saturate(120%);
+      margin-bottom:16px;
     }
 
     .feathers{position:absolute; inset:-8px; pointer-events:none; filter:drop-shadow(0 0 10px rgba(255,106,0,.35)); opacity:.75; z-index:0}
@@ -81,15 +83,10 @@
       background:radial-gradient(circle at 50% 55%, rgba(255,210,120,.15), rgba(255,130,40,.08) 60%, transparent 65%);
       box-shadow:0 0 24px rgba(255,160,60,.22), 0 0 54px rgba(255,120,30,.12), inset 0 0 18px rgba(255,200,120,.07);
     }
-    .egg img{
-      width:100%; height:100%; object-fit:cover; display:block;
-      image-rendering:auto; filter:saturate(1.05) contrast(1.02);
-    }
-    .egg::after{
-      content:""; position:absolute; inset:-12px; border-radius:28px; filter:blur(18px); pointer-events:none;
+    .egg img{width:100%; height:100%; object-fit:cover; display:block; image-rendering:auto; filter:saturate(1.05) contrast(1.02)}
+    .egg::after{content:""; position:absolute; inset:-12px; border-radius:28px; filter:blur(18px); pointer-events:none;
       background:conic-gradient(from 0deg, rgba(255,160,60,.12), rgba(255,210,120,.06), transparent 40%, rgba(255,120,40,.10));
-      animation:eggGlow 6s ease-in-out infinite;
-    }
+      animation:eggGlow 6s ease-in-out infinite}
     @keyframes eggGlow{0%,100%{opacity:.55; transform:scale(1)} 50%{opacity:.85; transform:scale(1.02)}}
 
     form{position:relative; z-index:1; padding:8px 18px 26px}
@@ -107,7 +104,7 @@
       box-shadow:inset 0 2px 6px rgba(0,0,0,.35); font-size:15px;
     }
     textarea{min-height:84px; resize:vertical}
-    .input::placeholder, textarea::placeholder{color:#a9b4bf; font-style:normal}
+    .input::placeholder, textarea::placeholder{color:#a9b4bf}
     .input:focus, textarea:focus, select:focus{border-color:rgba(255,106,0,.45); box-shadow:0 0 0 4px rgba(255,106,0,.12), inset 0 2px 6px rgba(0,0,0,.35)}
 
     select{appearance:none; -webkit-appearance:none; -moz-appearance:none; padding-right:42px;
@@ -163,7 +160,7 @@
       pointer-events:none; z-index:9999; padding:24px;
     }
     .toast{
-      --dur:10000ms; /* длительность жизни */
+      --dur:10000ms;
       width:min(92vw,560px);
       pointer-events:auto;
       color:#fff; border-radius:16px;
@@ -175,30 +172,51 @@
       animation:toast-in .35s ease, toast-out .4s ease var(--dur) forwards;
       text-align:center;
     }
-    .toast.success{
-      background: radial-gradient(120% 120% at 0% 0%, #1f4d2c 0%, #0b1a10 55%),
-                  linear-gradient(90deg,#00e676,#00c853);
-    }
-    .toast.info{
-      background: radial-gradient(120% 120% at 0% 0%, #0f2a66 0%, #0a1226 55%),
-                  linear-gradient(90deg,#448aff,#2962ff);
-    }
-    .toast.error{
-      background: radial-gradient(120% 120% at 0% 0%, #4d1010 0%, #1a0b0b 55%),
-                  linear-gradient(90deg,#ff5252,#d50000);
-    }
+    .toast.success{ background: radial-gradient(120% 120% at 0% 0%, #1f4d2c 0%, #0b1a10 55%), linear-gradient(90deg,#00e676,#00c853) }
+    .toast.info{    background: radial-gradient(120% 120% at 0% 0%, #0f2a66 0%, #0a1226 55%), linear-gradient(90deg,#448aff,#2962ff) }
+    .toast.error{   background: radial-gradient(120% 120% at 0% 0%, #4d1010 0%, #1a0b0b 55%), linear-gradient(90deg,#ff5252,#d50000) }
     .toast::after{
       content:""; position:absolute; left:0; right:0; bottom:0; height:3px;
       background:rgba(255,255,255,.55);
       transform-origin:left; transform:scaleX(1);
-      animation:bar var(--dur) linear forwards;
-      mix-blend-mode:soft-light;
+      animation:bar var(--dur) linear forwards; mix-blend-mode:soft-light;
     }
     @keyframes toast-in{from{transform:translateY(14px) scale(.98);opacity:0} to{transform:translateY(0) scale(1);opacity:1}}
     @keyframes toast-out{to{opacity:0; transform:translateY(10px) scale(.98)}}
     @keyframes bar{to{transform:scaleX(0)}}
     #phoenix-toasts.stack{align-items:flex-start; justify-content:center}
     #phoenix-toasts.stack .toast{margin-top:10px}
+
+    /* ====== Admin dashboard styles ====== */
+    .dash-row{display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px 14px}
+    .filters{display:grid; grid-template-columns:1fr; gap:10px}
+    .filter-group{background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:10px}
+    .fg-title{font-weight:800; color:var(--gold); margin:2px 0 10px 2px; font-size:14px; letter-spacing:.04em}
+    .pills{display:flex; flex-wrap:wrap; gap:8px}
+    .pill{padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.08);
+      background:linear-gradient(180deg,rgba(20,24,32,.75),rgba(12,16,22,.85)); cursor:pointer; font-size:13px}
+    .pill.active{border-color:rgba(255,106,0,.45); box-shadow:0 0 0 3px rgba(255,106,0,.12) inset}
+    .dash-metrics{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px}
+    .metric{background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:10px; text-align:center}
+    .metric .k{font-size:22px; font-weight:900; color:var(--gold)}
+    .metric .l{font-size:12px; color:#aeb6c2}
+
+    .heat{overflow:auto; border:1px solid rgba(255,255,255,.06); border-radius:14px}
+    .heat table{width:100%; border-collapse:collapse}
+    .heat th,.heat td{padding:8px; border-bottom:1px solid rgba(255,255,255,.06); border-right:1px solid rgba(255,255,255,.04); text-align:center; font-size:13px}
+    .heat th{position:sticky; top:0; background:rgba(15,18,26,.9); z-index:1}
+    .hcell{border-radius:8px; padding:6px 8px; display:inline-block; min-width:36px}
+    .heat-0{background:#1b2230}
+    .heat-1{background:#26344a}
+    .heat-2{background:#2f4463}
+    .heat-3{background:#38547b}
+    .heat-4{background:#416594}
+    .heat-5{background:#4a75ac}
+    .heat-6{background:#5386c5}
+    .heat-7{background:#5c96dd}
+    .heat-8{background:#65a6f6}
+    .heat-9{background:#6eb6ff}
+    @media (max-width:900px){ .dash-row{grid-template-columns:1fr} .dash-metrics{grid-template-columns:repeat(2,1fr)} }
   </style>
 </head>
 <body>
@@ -339,25 +357,69 @@
       </form>
     </div>
 
-    <!-- Админ-просмотр (?admin=1) -->
-    <div id="admin" class="card" style="display:none; margin-top:16px; padding:14px 18px 22px">
-      <h2 style="margin:6px 0 14px; font-family:'Ruslan Display',serif; letter-spacing:.06em">Админ-просмотр</h2>
-      <div style="display:grid; grid-template-columns:1fr 160px; gap:10px; margin-bottom:10px">
-        <input class="input" id="search" placeholder="поиск по нику или телеграм" />
-        <button id="reload" class="submit" style="min-height:48px; padding:12px 16px">Обновить</button>
+    <!-- ===== Admin Dashboard ===== -->
+    <div id="admin" class="card" style="display:none; padding:14px 14px 18px">
+      <h2 style="margin:6px 0 14px; font-family:'Ruslan Display',serif; letter-spacing:.06em">Админ-просмотр & мини-дашборд</h2>
+
+      <div class="dash-row">
+        <!-- Фильтры -->
+        <div class="filters">
+          <div class="filter-group">
+            <div class="fg-title">Дни</div>
+            <div id="flt-days" class="pills"></div>
+          </div>
+          <div class="filter-group">
+            <div class="fg-title">Время</div>
+            <div id="flt-times" class="pills"></div>
+          </div>
+          <div class="filter-group">
+            <div class="fg-title">Роли</div>
+            <div id="flt-roles" class="pills"></div>
+          </div>
+          <div class="filter-group" style="display:flex; align-items:center; gap:10px; justify-content:space-between">
+            <div class="fg-title" style="margin:0">Показывать в МСК (UTC+3)</div>
+            <label class="pill" style="user-select:none">
+              <input id="mskToggle" type="checkbox" style="display:none" checked />
+              <span id="mskLabel">ВКЛ</span>
+            </label>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 120px 120px; gap:8px; margin-top:6px">
+            <input class="input" id="search" placeholder="поиск: ник / telegram" />
+            <button id="reset"  class="submit" style="min-height:48px; padding:12px 16px">Сбросить</button>
+            <button id="reload" class="submit" style="min-height:48px; padding:12px 16px">Обновить</button>
+          </div>
+        </div>
+
+        <!-- Метрики + тепловая -->
+        <div>
+          <div class="dash-metrics" id="metrics">
+            <div class="metric"><div class="k" id="m-total">0</div><div class="l">Всего игроков</div></div>
+            <div class="metric"><div class="k" id="m-beg">0</div><div class="l">Новички</div></div>
+            <div class="metric"><div class="k" id="m-mid">0</div><div class="l">Опытные</div></div>
+            <div class="metric"><div class="k" id="m-vet">0</div><div class="l">Ветераны</div></div>
+          </div>
+          <div class="heat" id="heat" style="margin-top:10px"></div>
+        </div>
       </div>
+
       <div id="grid" style="overflow:auto; max-height:60vh; border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:8px"></div>
-      <p style="color:var(--muted); font-size:12px; margin-top:8px">Подключи PUBLIC ключи Supabase (anon), иначе просмотр не загрузится.</p>
+      <p style="color:var(--muted); font-size:12px; margin-top:8px">Тумблер «МСК» преобразует локальные времена игроков в Europe/Moscow.</p>
     </div>
   </div>
 
-  <!-- 🔔 Phoenix toasts container -->
+  <!-- 🔔 Phoenix toasts -->
   <div id="phoenix-toasts" aria-live="polite" aria-atomic="true"></div>
 
   <script>
   (function(){
     if (window.__PHOENIX_BOOTED__) return;
     window.__PHOENIX_BOOTED__ = true;
+
+    // ===== вспомогательные =====
+    const DAYS = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+    const TIMES = ['07:00 – 10:00','10:00 – 13:00','13:00 – 16:00','16:00 – 19:00','19:00 – 23:00','23:00 – 06:00'];
+    const ROLES = ['Атакующий','Оборонительный','Комбинированный','Капитан пары'];
 
     // фон-видео
     (function(){
@@ -367,7 +429,7 @@
       apply(pref); pref.addEventListener?.('change',apply);
     })();
 
-    // анти-кеш для GIF при локальном открытии
+    // анти-кеш для GIF локально
     (function(){
       const img=document.getElementById('egggif');
       if(!img) return;
@@ -397,7 +459,7 @@
       resize(); draw(); addEventListener('resize',resize);
     })();
 
-    // декоративные "пёрышки"
+    // пёрышки
     (function(){
       const box=document.querySelector('.feathers'); if(!box) return;
       const glyphs='~ ∿ 〰  ≈  ∼  ˜  ﹌  ﹋';
@@ -412,9 +474,7 @@
       }
     })();
 
-    // чипы
-    const DAYS=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
-    const TIMES=['07:00 – 10:00','10:00 – 13:00','13:00 – 16:00','16:00 – 19:00','19:00 – 23:00','23:00 – 06:00'];
+    // чипы формы
     function renderChips(id, list, name){
       const box=document.getElementById(id); if(!box) return; box.innerHTML='';
       list.forEach(v=>{
@@ -427,19 +487,17 @@
     renderChips('daysChips',DAYS,'days');
     renderChips('timesChips',TIMES,'times');
 
-    /* ======= Toasts helpers ======= */
+    /* ======= Toasts ======= */
     function showMessage(text, type='info', ms=10000){
       const host = document.getElementById('phoenix-toasts');
       if(!host) return alert(text);
       host.classList.toggle('stack', host.children.length > 0);
-
       const el = document.createElement('div');
       el.className = `toast ${type}`;
       el.style.setProperty('--dur', `${ms}ms`);
       el.role = 'status';
       el.innerHTML = `<div>${text}</div>`;
       host.appendChild(el);
-
       setTimeout(()=>{ el.remove(); }, ms + 450);
     }
     const phoenix = {
@@ -448,7 +506,7 @@
       oops(){ showMessage("💀 Ошибка судьбы! Обратись к Хранителю огня @DeKo_Sun.", "error"); }
     };
 
-    // Supabase
+    // ===== Supabase + сохранение =====
     let supabase;
     (async () => {
       const SUPABASE_URL = window.SUPABASE_URL;
@@ -456,7 +514,7 @@
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
       const qs = new URLSearchParams(location.search);
-      const tgIdFromLink = qs.get("tg_id"); // строка
+      const tgIdFromLink = qs.get("tg_id");
       const tgUserFromLink = qs.get("tg") || qs.get("username") || qs.get("tg_username");
 
       const tgField = document.getElementById("telegram");
@@ -497,10 +555,15 @@
           updated_at: new Date().toISOString(),
         };
 
+        // Вычисляем tz локально (не ломаем БД, если колонок нет)
+        const tzName = Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+        const tzOffsetMin = getTzOffsetMinutesSafe(tzName, new Date());
+
         try {
           let playerId = null;
           let didUpdate = false;
 
+          // найти профиль
           if (telegram_id) {
             const { data: byId, error: e1 } = await supabase
               .from("rg_players")
@@ -510,7 +573,6 @@
             if (e1) throw e1;
             playerId = byId?.id || null;
           }
-
           if (!playerId && telegram) {
             const { data: byName, error: e2 } = await supabase
               .from("rg_players")
@@ -521,6 +583,7 @@
             playerId = byName?.id || null;
           }
 
+          // сохранить
           if (playerId) {
             const { error: updErr } = await supabase
               .from("rg_players")
@@ -534,7 +597,6 @@
               .insert({ ...payload, created_at: new Date().toISOString() })
               .select("id")
               .maybeSingle();
-
             if (insErr && insErr.code === "23505") {
               let updQ = supabase.from("rg_players").update(payload);
               if (telegram_id) updQ = updQ.eq("telegram_id", telegram_id);
@@ -549,15 +611,18 @@
             }
           }
 
-          if (!playerId) {
-            const q = supabase.from("rg_players").select("id").limit(1);
-            let sel;
-            if (telegram_id) sel = await q.eq("telegram_id", telegram_id).maybeSingle();
-            else if (telegram) sel = await q.eq("telegram_norm", norm(telegram)).maybeSingle();
-            playerId = sel?.data?.id || null;
+          // записать tz (мягко, если колонок нет — игнор)
+          if (playerId && tzName){
+            try{
+              await supabase.from("rg_players").update({
+                tz_name: tzName,
+                tz_offset_minutes: tzOffsetMin
+              }).eq("id", playerId);
+            }catch(_e){}
           }
-          if (!playerId) throw new Error("Не удалось определить ID игрока после сохранения.");
 
+          // согласия
+          if (!playerId) throw new Error("Не удалось определить ID игрока после сохранения.");
           const { error: consErr } = await supabase.from("rg_consents").upsert(
             {
               player_id: playerId,
@@ -568,9 +633,7 @@
           );
           if (consErr) throw consErr;
 
-          // красивые уведомления
-          if (didUpdate) phoenix.updated();
-          else phoenix.welcome();
+          if (didUpdate) phoenix.updated(); else phoenix.welcome();
 
         } catch (err) {
           console.error("Ошибка Supabase:", err);
@@ -579,27 +642,130 @@
       });
     })();
 
-    // админ-вид
+    // ===== Admin Dashboard logic (с МСК-режимом) =====
     (function(){
       const isAdmin = new URLSearchParams(location.search).get('admin')==='1';
       if(!isAdmin) return;
       document.getElementById('admin').style.display='block';
-      if(!supabase){ document.getElementById('grid').textContent = 'Нет клиента Supabase'; return; }
+
+      const mskToggle = document.getElementById('mskToggle');
+      const mskLabel  = document.getElementById('mskLabel');
+      mskToggle.addEventListener('change', ()=>{ mskLabel.textContent = mskToggle.checked ? 'ВКЛ' : 'ВЫКЛ'; applyFilters(); });
+
+      // Pills render
+      function renderPills(containerId, list){
+        const box = document.getElementById(containerId);
+        box.innerHTML = '';
+        list.forEach(v=>{
+          const b=document.createElement('button');
+          b.type='button'; b.className='pill'; b.textContent=v; b.dataset.value=v;
+          b.addEventListener('click',()=>{ b.classList.toggle('active'); applyFilters(); });
+          box.appendChild(b);
+        });
+      }
+      renderPills('flt-days', DAYS);
+      renderPills('flt-times', TIMES);
+      renderPills('flt-roles', ROLES);
+
+      // State
+      let allRows = [];
+      let supaReadyInterval = setInterval(()=>{ if (window.supabase){ clearInterval(supaReadyInterval); init(); } }, 50);
+
+      async function init(){
+        await load(); // первичная загрузка
+        document.getElementById('reload').addEventListener('click', load);
+        document.getElementById('reset').addEventListener('click', ()=>{
+          document.querySelectorAll('.pill.active').forEach(p=>p.classList.remove('active'));
+          document.getElementById('search').value='';
+          applyFilters();
+        });
+        document.getElementById('search').addEventListener('input', applyFilters);
+      }
 
       async function load(){
-        const {data, error} = await supabase
+        const { data, error } = await supabase
           .from('rg_players')
-          .select('*')
+          .select('id,nickname,telegram,telegram_norm,telegram_id,days,times,roles,experience,created_at,updated_at,tz_name,tz_offset_minutes')
           .order('created_at',{ascending:false})
-          .limit(300);
-        if(error){ document.getElementById('grid').textContent = error.message; return; }
+          .limit(1000);
+        if (error){
+          document.getElementById('grid').textContent = error.message;
+          return;
+        }
+        allRows = Array.isArray(data) ? data : [];
+        applyFilters();
+      }
+
+      function getActive(containerId){
+        return [...document.querySelectorAll(`#${containerId} .pill.active`)].map(p=>p.dataset.value);
+      }
+
+      function passFilters(r){
         const q = (document.getElementById('search').value||'').trim().toLowerCase();
-        const rows = data.filter(r=>{
-          if(!q) return true;
-          return (r.nickname||'').toLowerCase().includes(q)
-              || (r.telegram||'').toLowerCase().includes(q)
-              || (r.telegram_norm||'').toLowerCase().includes(q);
+        if (q){
+          const hit = (r.nickname||'').toLowerCase().includes(q)
+                  || (r.telegram||'').toLowerCase().includes(q)
+                  || (r.telegram_norm||'').toLowerCase().includes(q);
+          if (!hit) return false;
+        }
+
+        const days = (r.days||[]);
+        const timesLocal = (r.times||[]);
+        const timesView  = mskToggle.checked ? toMSKTimes(r, timesLocal) : timesLocal;
+
+        const fd = getActive('flt-days');   if (fd.length && !days.some(d=>fd.includes(d))) return false;
+        const ft = getActive('flt-times');  if (ft.length && !timesView.some(t=>ft.includes(t))) return false;
+        const fr = getActive('flt-roles');  if (fr.length && !(r.roles||[]).some(ro=>fr.includes(ro))) return false;
+
+        return true;
+      }
+
+      function applyFilters(){
+        const rows = allRows.filter(passFilters);
+        renderMetrics(rows);
+        renderHeat(rows);
+        renderTable(rows);
+      }
+
+      function renderMetrics(rows){
+        const total = rows.length;
+        const beg = rows.filter(r=>r.experience?.startsWith('Новичок')).length;
+        const mid = rows.filter(r=>r.experience?.startsWith('Опытный')).length;
+        const vet = rows.filter(r=>r.experience?.startsWith('Ветеран')).length;
+        document.getElementById('m-total').textContent = total;
+        document.getElementById('m-beg').textContent = beg;
+        document.getElementById('m-mid').textContent = mid;
+        document.getElementById('m-vet').textContent = vet;
+      }
+
+      function renderHeat(rows){
+        const M = DAYS.map(()=>TIMES.map(()=>0));
+        rows.forEach(r=>{
+          const dlist = (r.days||[]);
+          const tlist = mskToggle.checked ? toMSKTimes(r, (r.times||[])) : (r.times||[]);
+          dlist.forEach(d=>{
+            const di = DAYS.indexOf(d); if (di<0) return;
+            tlist.forEach(t=>{
+              const ti = TIMES.indexOf(t); if (ti<0) return;
+              M[di][ti] += 1;
+            });
+          });
         });
+        const max = Math.max(1, ...M.flat());
+        const heat = document.getElementById('heat');
+        const thead = `<thead><tr><th>День \\ Время ${mskToggle.checked ? '(МСК)' : '(лок.)'}</th>${TIMES.map(t=>`<th>${t}</th>`).join('')}</tr></thead>`;
+        const tbody = `<tbody>${
+          M.map((row,i)=>`<tr><th style="text-align:left; position:sticky; left:0; background:rgba(15,18,26,.9)">${DAYS[i]}</th>${
+            row.map(v=>{
+              const grade = Math.min(9, Math.round((v/max)*9));
+              return `<td><span class="hcell heat-${grade}">${v}</span></td>`;
+            }).join('')
+          }</tr>`).join('')
+        }</tbody>`;
+        heat.innerHTML = `<table>${thead}${tbody}</table>`;
+      }
+
+      function renderTable(rows){
         const html = `
           <table style="width:100%; border-collapse:collapse">
             <thead>
@@ -608,29 +774,141 @@
                 <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Telegram</th>
                 <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">tg_id</th>
                 <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Дни</th>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Время</th>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Время ${mskToggle.checked ? '(МСК)' : '(лок.)'}</th>
+                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Роли</th>
                 <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Опыт</th>
                 <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Создано</th>
               </tr>
             </thead>
             <tbody>
-              ${rows.map(r=>`
+              ${rows.map(r=>{
+                const tlist = mskToggle.checked ? toMSKTimes(r, (r.times||[])) : (r.times||[]);
+                return `
                 <tr>
                   <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${r.nickname||''}</td>
                   <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">@${r.telegram||''}</td>
                   <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${r.telegram_id ?? ''}</td>
                   <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${(r.days||[]).join(', ')}</td>
-                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${(r.times||[]).join(', ')}</td>
+                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${tlist.join(', ')}</td>
+                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${(r.roles||[]).join(', ')}</td>
                   <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${r.experience||''}</td>
                   <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${r.created_at ? new Date(r.created_at).toLocaleString() : ''}</td>
-                </tr>`).join('')}
+                </tr>`;
+              }).join('')}
             </tbody>
           </table>`;
         document.getElementById('grid').innerHTML = html;
       }
-      document.getElementById('reload').addEventListener('click',load);
-      document.getElementById('search').addEventListener('input',load);
-      load();
+
+      // ===== ВРЕМЕНА И ТАЙМЗОНЫ =====
+
+      // парсер "HH:MM – HH:MM" -> {s,e} минуты от 00:00, с поддержкой ночного интервала (e < s -> через сутки)
+      function parseRange(label){
+        const m = label.match(/^(\d{2}):(\d{2})\s*–\s*(\d{2}):(\d{2})$/);
+        if(!m) return null;
+        const s = (+m[1])*60 + (+m[2]);
+        const e = (+m[3])*60 + (+m[4]);
+        return { s, e };
+      }
+
+      // разбиение на стандартные слоты TIMES после сдвига
+      const SLOT_LIST = TIMES.map(t=>({t, ...parseRange(t)}));
+
+      // смещение интервала на delta минут (может быть отриц.), с учётом суток и «через полночь»
+      function shiftInterval({s,e}, delta){
+        const wrap = x => (x%1440+1440)%1440;
+        const ns = wrap(s + delta);
+        const ne = wrap(e + delta);
+        const overMidnight = (e <= s); // изначально ночной?
+        // после сдвига тоже может быть ночной
+        return { s: ns, e: ne, night: (overMidnight ? true : ns>ne) || (ne<ns) };
+      }
+
+      // проверка пересечения [a,b) и [c,d) на окружности 24 часа
+      function overlapMinutes(a, b, c, d){
+        function norm(x){return (x%1440+1440)%1440}
+        a=norm(a); b=norm(b); c=norm(c); d=norm(d);
+        function segOverlap(x1,x2,y1,y2){ return Math.max(0, Math.min(x2,y2) - Math.max(x1,y1)); }
+        let tot = 0;
+        const A = (b>=a) ? [[a,b]] : [[a,1440],[0,b]];
+        const B = (d>=c) ? [[c,d]] : [[c,1440],[0,d]];
+        for(const [x1,x2] of A){
+          for(const [y1,y2] of B){
+            tot += segOverlap(x1,x2,y1,y2);
+          }
+        }
+        return tot;
+      }
+
+      // конвертация списка ярлыков игрока в ярлыки МСК с порогом пересечения
+      function toMSKTimes(row, labels){
+        if(!labels || !labels.length) return [];
+        const tz = row.tz_name || null;
+        const delta = getDeltaToMSK(tz, row.tz_offset_minutes);
+        const resSet = new Set();
+        for(const lab of labels){
+          const pr = parseRange(lab); if(!pr) continue;
+          const sh = shiftInterval(pr, delta);
+          for(const slot of SLOT_LIST){
+            const ov = overlapMinutes(sh.s, sh.e, slot.s, slot.e);
+            const span = (slot.e >= slot.s) ? (slot.e-slot.s) : (1440 - slot.s + slot.e);
+            // если пересечение > 50% слота — считаем, что попали в слот
+            if (ov >= 0.5 * span) resSet.add(slot.t);
+          }
+        }
+        return Array.from(resSet);
+      }
+
+      // разница (в минутах), которую нужно ДОБАВИТЬ к локальному времени игрока, чтобы получить МСК
+      function getDeltaToMSK(tzName, storedOffsetMin){
+        const now = new Date();
+        const mskOffset = getTzOffsetMinutesSafe('Europe/Moscow', now); // например 180
+        // если знаем точную таймзону
+        if (tzName){
+          const srcOffset = getTzOffsetMinutesSafe(tzName, now);
+          return (mskOffset - srcOffset);
+        }
+        // если в строке есть сохранённый offset (на будущее)
+        if (typeof storedOffsetMin === 'number' && Number.isFinite(storedOffsetMin)){
+          return (mskOffset - storedOffsetMin);
+        }
+        // таймзона неизвестна — считаем, что уже МСК
+        return 0;
+      }
+
+      // безопасное получение смещения таймзоны в минутах (положительное = UTC+X)
+      function getTzOffsetMinutesSafe(tz, date){
+        try{
+          if(!tz) return 180; // дефолт МСК
+          // получим "+03:00" через timeZoneName: shortOffset / longOffset
+          const fmt = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            hourCycle:'h23',
+            year:'numeric', month:'2-digit', day:'2-digit',
+            hour:'2-digit', minute:'2-digit', second:'2-digit',
+            timeZoneName: 'shortOffset'
+          });
+          const parts = fmt.formatToParts(date);
+          const off = parts.find(p=>p.type==='timeZoneName')?.value || '';
+          const m = off.match(/GMT([+-]\d{1,2})(?::?(\d{2}))?/i) || off.match(/UTC([+-]\d{1,2})(?::?(\d{2}))?/i);
+          if (m){
+            const h = parseInt(m[1],10);
+            const mm = m[2] ? parseInt(m[2],10) : 0;
+            return h*60 + Math.sign(h)*mm;
+          }
+          // fallback: попробуем longOffset
+          const fmt2 = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName:'longOffset' });
+          const parts2 = fmt2.formatToParts(date);
+          const off2 = parts2.find(p=>p.type==='timeZoneName')?.value || '';
+          const m2 = off2.match(/UTC([+-]\d{1,2}):(\d{2})/i);
+          if(m2){
+            const h = parseInt(m2[1],10), mm = parseInt(m2[2],10);
+            return h*60 + Math.sign(h)*mm;
+          }
+        }catch(_e){}
+        // по умолчанию пусть будет МСК
+        return 180;
+      }
     })();
   })();
   </script>
