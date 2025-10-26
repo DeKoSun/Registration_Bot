@@ -138,8 +138,38 @@
       background:linear-gradient(90deg, var(--accent), var(--accent-2));
       box-shadow:0 18px 30px rgba(255,106,0,.35), inset 0 -3px 0 rgba(0,0,0,.25);
       transition:transform .12s ease, box-shadow .12s ease;
+      display:flex; align-items:center; justify-content:center;
+      text-align:center;
     }
     .submit:hover{transform:translateY(-1px); box-shadow:0 26px 40px rgba(255,106,0,.45)}
+
+    /* --- Центрированные кнопки в админке --- */
+    .actions {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 200px;        /* одинаковая ширина */
+      height: 56px;
+      border-radius: 16px;
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: #0b0f14;
+      background: linear-gradient(90deg,#ff6a00,#ff9f43);
+      box-shadow: 0 10px 20px rgba(255,106,0,.25), inset 0 -3px 0 rgba(0,0,0,.25);
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 16px 26px rgba(255,106,0,.4); }
+    .btn:active { transform: translateY(0); box-shadow: 0 6px 16px rgba(255,106,0,.25); }
+    @media (max-width:520px){ .actions{flex-direction:column; gap:12px} .btn{width:100%} }
 
     @media (max-width:520px){
       .chips{grid-template-columns:1fr}
@@ -190,21 +220,29 @@
     /* ====== Admin dashboard styles ====== */
     .dash-row{display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px 14px}
     .filters{display:grid; grid-template-columns:1fr; gap:10px}
-    .filter-group{background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:10px}
-    .fg-title{font-weight:800; color:var(--gold); margin:2px 0 10px 2px; font-size:14px; letter-spacing:.04em}
-    .pills{display:flex; flex-wrap:wrap; gap:8px}
-    .pill{padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.08);
-      background:linear-gradient(180deg,rgba(20,24,32,.75),rgba(12,16,22,.85)); cursor:pointer; font-size:13px}
-    .pill.active{border-color:rgba(255,106,0,.45); box-shadow:0 0 0 3px rgba(255,106,0,.12) inset}
+    .filter-group{background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.10); border-radius:14px; padding:12px}
+    .fg-title{
+      font-weight:900; color:var(--gold); margin:2px 0 12px 2px;
+      font-size:16px; letter-spacing:.05em; text-shadow:0 0 10px rgba(255,106,0,.25);
+    }
+    .pills{display:flex; flex-wrap:wrap; gap:10px}
+    .pill{
+      padding:10px 14px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.16);
+      background:linear-gradient(180deg,rgba(18,22,30,.92),rgba(12,16,22,.96));
+      cursor:pointer; font-size:15px; font-weight:700; color:var(--ink);
+      text-shadow:0 1px 0 rgba(0,0,0,.6);
+    }
+    .pill.active{border-color:rgba(255,106,0,.6); box-shadow:0 0 0 4px rgba(255,106,0,.14) inset}
     .dash-metrics{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px}
-    .metric{background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:10px; text-align:center}
+    .metric{background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.10); border-radius:14px; padding:10px; text-align:center}
     .metric .k{font-size:22px; font-weight:900; color:var(--gold)}
     .metric .l{font-size:12px; color:#aeb6c2}
 
-    .heat{overflow:auto; border:1px solid rgba(255,255,255,.06); border-radius:14px}
+    .heat{overflow:auto; border:1px solid rgba(255,255,255,.10); border-radius:14px}
     .heat table{width:100%; border-collapse:collapse}
-    .heat th,.heat td{padding:8px; border-bottom:1px solid rgba(255,255,255,.06); border-right:1px solid rgba(255,255,255,.04); text-align:center; font-size:13px}
-    .heat th{position:sticky; top:0; background:rgba(15,18,26,.9); z-index:1}
+    .heat th,.heat td{padding:10px; border-bottom:1px solid rgba(255,255,255,.08); border-right:1px solid rgba(255,255,255,.06); text-align:center; font-size:14px}
+    .heat th{position:sticky; top:0; background:rgba(15,18,26,.95); z-index:1}
     .hcell{border-radius:8px; padding:6px 8px; display:inline-block; min-width:36px}
     .heat-0{background:#1b2230}
     .heat-1{background:#26344a}
@@ -217,6 +255,47 @@
     .heat-8{background:#65a6f6}
     .heat-9{background:#6eb6ff}
     @media (max-width:900px){ .dash-row{grid-template-columns:1fr} .dash-metrics{grid-template-columns:repeat(2,1fr)} }
+
+    /* --- Аккуратный ряд для тумблера МСК --- */
+    .filter-group.toggle-row{
+      display:flex;
+      align-items:center;      /* идеальное вертикальное выравнивание */
+      justify-content:space-between;
+      padding:10px 16px;
+      margin-top:4px;
+    }
+    .fg-title.toggle-label{
+      margin:0;
+      font-size:16px;
+      color:var(--gold);
+      font-weight:900;
+      text-shadow:0 0 10px rgba(255,106,0,.25);
+      letter-spacing:.05em;
+    }
+    .toggle-pill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:74px;
+      height:34px;
+      border-radius:999px;
+      font-weight:700;
+      font-size:15px;
+      line-height:1;              /* идеально центрирует текст */
+      background:linear-gradient(180deg, rgba(20,24,32,.85), rgba(12,16,22,.9));
+      border:1px solid rgba(255,255,255,.12);
+      color:var(--ink);
+      cursor:pointer;
+      transition:all .2s ease;
+      box-shadow:0 2px 8px rgba(0,0,0,.3);
+      user-select:none;
+    }
+    .toggle-pill.active{
+      border-color:rgba(255,106,0,.6);
+      background:linear-gradient(90deg,#ff6a00,#ff9f43);
+      color:#0b0f14;
+      box-shadow:0 0 10px rgba(255,106,0,.45);
+    }
   </style>
 </head>
 <body>
@@ -359,7 +438,7 @@
 
     <!-- ===== Admin Dashboard ===== -->
     <div id="admin" class="card" style="display:none; padding:14px 14px 18px">
-      <h2 style="margin:6px 0 14px; font-family:'Ruslan Display',serif; letter-spacing:.06em">Админ-просмотр & мини-дашборд</h2>
+      <h2 style="margin:6px 0 14px; font-family:'Ruslan Display',serif; letter-spacing:.06em">Мини-дашборд</h2>
 
       <div class="dash-row">
         <!-- Фильтры -->
@@ -373,22 +452,25 @@
             <div id="flt-times" class="pills"></div>
           </div>
           <div class="filter-group">
-            <div class="fg-title">Роли</div>
-            <div id="flt-roles" class="pills"></div>
+            <div class="fg-title">Колоды</div>
+            <div id="flt-decks" class="pills"></div>
           </div>
-          <div class="filter-group" style="display:flex; align-items:center; gap:10px; justify-content:space-between">
-            <div class="fg-title" style="margin:0">Показывать в МСК (UTC+3)</div>
-            <label class="pill" style="user-select:none">
-              <input id="mskToggle" type="checkbox" style="display:none" checked />
+
+          <!-- Ровный тумблер МСК -->
+          <div class="filter-group toggle-row">
+            <div class="fg-title toggle-label">Показывать в МСК (UTC+3)</div>
+            <label class="toggle-pill" id="mskBtn">
+              <input id="mskToggle" type="checkbox" hidden checked />
               <span id="mskLabel">ВКЛ</span>
             </label>
           </div>
 
-          <div style="display:grid; grid-template-columns:1fr 120px 120px; gap:8px; margin-top:6px">
-            <input class="input" id="search" placeholder="поиск: ник / telegram" />
-            <button id="reset"  class="submit" style="min-height:48px; padding:12px 16px">Сбросить</button>
-            <button id="reload" class="submit" style="min-height:48px; padding:12px 16px">Обновить</button>
+          <!-- Кнопки в центре, затем поиск -->
+          <div class="actions">
+            <button id="reset"  class="btn">Сбросить</button>
+            <button id="reload" class="btn">Обновить</button>
           </div>
+          <input class="input" id="search" placeholder="поиск по нику" style="margin-top:8px" />
         </div>
 
         <!-- Метрики + тепловая -->
@@ -403,8 +485,7 @@
         </div>
       </div>
 
-      <div id="grid" style="overflow:auto; max-height:60vh; border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:8px"></div>
-      <p style="color:var(--muted); font-size:12px; margin-top:8px">Тумблер «МСК» преобразует локальные времена игроков в Europe/Moscow.</p>
+      <div id="grid" style="overflow:auto; max-height:60vh; border:1px solid rgba(255,255,255,.06); border-radius:12px; padding:6px"></div>
     </div>
   </div>
 
@@ -417,9 +498,9 @@
     window.__PHOENIX_BOOTED__ = true;
 
     // ===== вспомогательные =====
-    const DAYS = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+    const DAYS  = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
     const TIMES = ['07:00 – 10:00','10:00 – 13:00','13:00 – 16:00','16:00 – 19:00','19:00 – 23:00','23:00 – 06:00'];
-    const ROLES = ['Атакующий','Оборонительный','Комбинированный','Капитан пары'];
+    const DECKS = ['Вампир','Ктулху','Котэ','Стандарт','Орк','Упряжка','Гном','Звёздный'];
 
     // фон-видео
     (function(){
@@ -650,7 +731,14 @@
 
       const mskToggle = document.getElementById('mskToggle');
       const mskLabel  = document.getElementById('mskLabel');
-      mskToggle.addEventListener('change', ()=>{ mskLabel.textContent = mskToggle.checked ? 'ВКЛ' : 'ВЫКЛ'; applyFilters(); });
+      const mskBtn    = document.getElementById('mskBtn');
+
+      function setMskUI(){
+        mskLabel.textContent = mskToggle.checked ? 'ВКЛ' : 'ВЫКЛ';
+        mskBtn.classList.toggle('active', mskToggle.checked);
+      }
+      setMskUI();
+      mskToggle.addEventListener('change', ()=>{ setMskUI(); applyFilters(); });
 
       // Pills render
       function renderPills(containerId, list){
@@ -663,9 +751,9 @@
           box.appendChild(b);
         });
       }
-      renderPills('flt-days', DAYS);
+      renderPills('flt-days',  DAYS);
       renderPills('flt-times', TIMES);
-      renderPills('flt-roles', ROLES);
+      renderPills('flt-decks', DECKS);
 
       // State
       let allRows = [];
@@ -685,7 +773,7 @@
       async function load(){
         const { data, error } = await supabase
           .from('rg_players')
-          .select('id,nickname,telegram,telegram_norm,telegram_id,days,times,roles,experience,created_at,updated_at,tz_name,tz_offset_minutes')
+          .select('id,nickname,telegram,telegram_norm,days,times,decks,experience,created_at,updated_at,tz_name,tz_offset_minutes')
           .order('created_at',{ascending:false})
           .limit(1000);
         if (error){
@@ -703,9 +791,7 @@
       function passFilters(r){
         const q = (document.getElementById('search').value||'').trim().toLowerCase();
         if (q){
-          const hit = (r.nickname||'').toLowerCase().includes(q)
-                  || (r.telegram||'').toLowerCase().includes(q)
-                  || (r.telegram_norm||'').toLowerCase().includes(q);
+          const hit = (r.nickname||'').toLowerCase().includes(q); // поиск только по нику
           if (!hit) return false;
         }
 
@@ -715,7 +801,7 @@
 
         const fd = getActive('flt-days');   if (fd.length && !days.some(d=>fd.includes(d))) return false;
         const ft = getActive('flt-times');  if (ft.length && !timesView.some(t=>ft.includes(t))) return false;
-        const fr = getActive('flt-roles');  if (fr.length && !(r.roles||[]).some(ro=>fr.includes(ro))) return false;
+        const fk = getActive('flt-decks');  if (fk.length && !(r.decks||[]).some(dk=>fk.includes(dk))) return false;
 
         return true;
       }
@@ -755,7 +841,7 @@
         const heat = document.getElementById('heat');
         const thead = `<thead><tr><th>День \\ Время ${mskToggle.checked ? '(МСК)' : '(лок.)'}</th>${TIMES.map(t=>`<th>${t}</th>`).join('')}</tr></thead>`;
         const tbody = `<tbody>${
-          M.map((row,i)=>`<tr><th style="text-align:left; position:sticky; left:0; background:rgba(15,18,26,.9)">${DAYS[i]}</th>${
+          M.map((row,i)=>`<tr><th style="text-align:left; position:sticky; left:0; background:rgba(15,18,26,.95)">${DAYS[i]}</th>${
             row.map(v=>{
               const grade = Math.min(9, Math.round((v/max)*9));
               return `<td><span class="hcell heat-${grade}">${v}</span></td>`;
@@ -770,14 +856,13 @@
           <table style="width:100%; border-collapse:collapse">
             <thead>
               <tr>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Ник</th>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Telegram</th>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">tg_id</th>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Дни</th>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Время ${mskToggle.checked ? '(МСК)' : '(лок.)'}</th>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Роли</th>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Опыт</th>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)">Создано</th>
+                <th style="text-align:left;padding:10px;border-bottom:1px solid rgba(255,255,255,.10)">Ник</th>
+                <th style="text-align:left;padding:10px;border-bottom:1px solid rgba(255,255,255,.10)">Telegram</th>
+                <th style="text-align:left;padding:10px;border-bottom:1px solid rgba(255,255,255,.10)">Дни</th>
+                <th style="text-align:left;padding:10px;border-bottom:1px solid rgba(255,255,255,.10)">Время ${mskToggle.checked ? '(МСК)' : '(лок.)'}</th>
+                <th style="text-align:left;padding:10px;border-bottom:1px solid rgba(255,255,255,.10)">Колоды</th>
+                <th style="text-align:left;padding:10px;border-bottom:1px solid rgba(255,255,255,.10)">Опыт</th>
+                <th style="text-align:left;padding:10px;border-bottom:1px solid rgba(255,255,255,.10)">Создано</th>
               </tr>
             </thead>
             <tbody>
@@ -785,14 +870,13 @@
                 const tlist = mskToggle.checked ? toMSKTimes(r, (r.times||[])) : (r.times||[]);
                 return `
                 <tr>
-                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${r.nickname||''}</td>
-                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">@${r.telegram||''}</td>
-                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${r.telegram_id ?? ''}</td>
-                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${(r.days||[]).join(', ')}</td>
-                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${tlist.join(', ')}</td>
-                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${(r.roles||[]).join(', ')}</td>
-                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${r.experience||''}</td>
-                  <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,.06)">${r.created_at ? new Date(r.created_at).toLocaleString() : ''}</td>
+                  <td style="padding:10px;border-bottom:1px solid rgba(255,255,255,.08)">${r.nickname||''}</td>
+                  <td style="padding:10px;border-bottom:1px solid rgba(255,255,255,.08)">@${r.telegram||''}</td>
+                  <td style="padding:10px;border-bottom:1px solid rgba(255,255,255,.08)">${(r.days||[]).join(', ')}</td>
+                  <td style="padding:10px;border-bottom:1px solid rgba(255,255,255,.08)">${tlist.join(', ')}</td>
+                  <td style="padding:10px;border-bottom:1px solid rgba(255,255,255,.08)">${(r.decks||[]).join(', ')}</td>
+                  <td style="padding:10px;border-bottom:1px solid rgba(255,255,255,.08)">${r.experience||''}</td>
+                  <td style="padding:10px;border-bottom:1px solid rgba(255,255,255,.08)">${r.created_at ? new Date(r.created_at).toLocaleString() : ''}</td>
                 </tr>`;
               }).join('')}
             </tbody>
@@ -802,7 +886,7 @@
 
       // ===== ВРЕМЕНА И ТАЙМЗОНЫ =====
 
-      // парсер "HH:MM – HH:MM" -> {s,e} минуты от 00:00, с поддержкой ночного интервала (e < s -> через сутки)
+      // парсер "HH:MM – HH:MM"
       function parseRange(label){
         const m = label.match(/^(\d{2}):(\d{2})\s*–\s*(\d{2}):(\d{2})$/);
         if(!m) return null;
@@ -811,20 +895,17 @@
         return { s, e };
       }
 
-      // разбиение на стандартные слоты TIMES после сдвига
       const SLOT_LIST = TIMES.map(t=>({t, ...parseRange(t)}));
 
-      // смещение интервала на delta минут (может быть отриц.), с учётом суток и «через полночь»
+      // смещение интервала на delta минут
       function shiftInterval({s,e}, delta){
         const wrap = x => (x%1440+1440)%1440;
         const ns = wrap(s + delta);
         const ne = wrap(e + delta);
-        const overMidnight = (e <= s); // изначально ночной?
-        // после сдвига тоже может быть ночной
-        return { s: ns, e: ne, night: (overMidnight ? true : ns>ne) || (ne<ns) };
+        return { s: ns, e: ne };
       }
 
-      // проверка пересечения [a,b) и [c,d) на окружности 24 часа
+      // пересечение [a,b) и [c,d) на 24ч окружности
       function overlapMinutes(a, b, c, d){
         function norm(x){return (x%1440+1440)%1440}
         a=norm(a); b=norm(b); c=norm(c); d=norm(d);
@@ -840,7 +921,7 @@
         return tot;
       }
 
-      // конвертация списка ярлыков игрока в ярлыки МСК с порогом пересечения
+      // конвертация списка ярлыков игрока в ярлыки МСК
       function toMSKTimes(row, labels){
         if(!labels || !labels.length) return [];
         const tz = row.tz_name || null;
@@ -852,7 +933,6 @@
           for(const slot of SLOT_LIST){
             const ov = overlapMinutes(sh.s, sh.e, slot.s, slot.e);
             const span = (slot.e >= slot.s) ? (slot.e-slot.s) : (1440 - slot.s + slot.e);
-            // если пересечение > 50% слота — считаем, что попали в слот
             if (ov >= 0.5 * span) resSet.add(slot.t);
           }
         }
@@ -862,25 +942,21 @@
       // разница (в минутах), которую нужно ДОБАВИТЬ к локальному времени игрока, чтобы получить МСК
       function getDeltaToMSK(tzName, storedOffsetMin){
         const now = new Date();
-        const mskOffset = getTzOffsetMinutesSafe('Europe/Moscow', now); // например 180
-        // если знаем точную таймзону
+        const mskOffset = getTzOffsetMinutesSafe('Europe/Moscow', now);
         if (tzName){
           const srcOffset = getTzOffsetMinutesSafe(tzName, now);
           return (mskOffset - srcOffset);
         }
-        // если в строке есть сохранённый offset (на будущее)
         if (typeof storedOffsetMin === 'number' && Number.isFinite(storedOffsetMin)){
           return (mskOffset - storedOffsetMin);
         }
-        // таймзона неизвестна — считаем, что уже МСК
         return 0;
       }
 
-      // безопасное получение смещения таймзоны в минутах (положительное = UTC+X)
+      // безопасное получение смещения таймзоны в минутах
       function getTzOffsetMinutesSafe(tz, date){
         try{
           if(!tz) return 180; // дефолт МСК
-          // получим "+03:00" через timeZoneName: shortOffset / longOffset
           const fmt = new Intl.DateTimeFormat('en-US', {
             timeZone: tz,
             hourCycle:'h23',
@@ -896,7 +972,6 @@
             const mm = m[2] ? parseInt(m[2],10) : 0;
             return h*60 + Math.sign(h)*mm;
           }
-          // fallback: попробуем longOffset
           const fmt2 = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName:'longOffset' });
           const parts2 = fmt2.formatToParts(date);
           const off2 = parts2.find(p=>p.type==='timeZoneName')?.value || '';
@@ -906,7 +981,6 @@
             return h*60 + Math.sign(h)*mm;
           }
         }catch(_e){}
-        // по умолчанию пусть будет МСК
         return 180;
       }
     })();
