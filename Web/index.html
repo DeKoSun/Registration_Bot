@@ -156,7 +156,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 200px;        /* одинаковая ширина */
+      width: 200px;
       height: 56px;
       border-radius: 16px;
       font-size: 18px;
@@ -183,7 +183,7 @@
       .bg-video video{animation:none}
     }
 
-    /* ======= Phoenix toasts (центр, без кнопки, 10 сек) ======= */
+    /* ======= Phoenix toasts ======= */
     #phoenix-toasts{
       position:fixed; inset:0;
       display:flex; align-items:center; justify-content:center;
@@ -259,7 +259,7 @@
     /* --- Аккуратный ряд для тумблера МСК --- */
     .filter-group.toggle-row{
       display:flex;
-      align-items:center;      /* идеальное вертикальное выравнивание */
+      align-items:center;
       justify-content:space-between;
       padding:10px 16px;
       margin-top:4px;
@@ -281,7 +281,7 @@
       border-radius:999px;
       font-weight:700;
       font-size:15px;
-      line-height:1;              /* идеально центрирует текст */
+      line-height:1;
       background:linear-gradient(180deg, rgba(20,24,32,.85), rgba(12,16,22,.9));
       border:1px solid rgba(255,255,255,.12);
       color:var(--ink);
@@ -497,7 +497,49 @@
     if (window.__PHOENIX_BOOTED__) return;
     window.__PHOENIX_BOOTED__ = true;
 
-    // ===== вспомогательные =====
+    // ===== timezone helpers (global) =====
+    function getTzOffsetMinutesSafe(tz, date){
+      try{
+        if(!tz) return 180; // дефолт МСК
+        const fmt = new Intl.DateTimeFormat('en-US', {
+          timeZone: tz, hourCycle:'h23',
+          year:'numeric', month:'2-digit', day:'2-digit',
+          hour:'2-digit', minute:'2-digit', second:'2-digit',
+          timeZoneName:'shortOffset'
+        });
+        const parts = fmt.formatToParts(date);
+        const off = parts.find(p=>p.type==='timeZoneName')?.value || '';
+        const m = off.match(/GMT([+-]\d{1,2})(?::?(\d{2}))?/i) || off.match(/UTC([+-]\d{1,2})(?::?(\d{2}))?/i);
+        if (m){
+          const h = parseInt(m[1],10);
+          const mm = m[2] ? parseInt(m[2],10) : 0;
+          return h*60 + Math.sign(h)*mm;
+        }
+        const fmt2 = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName:'longOffset' });
+        const parts2 = fmt2.formatToParts(date);
+        const off2 = parts2.find(p=>p.type==='timeZoneName')?.value || '';
+        const m2 = off2.match(/UTC([+-]\d{1,2}):(\d{2})/i);
+        if(m2){
+          const h = parseInt(m2[1],10), mm = parseInt(m2[2],10);
+          return h*60 + Math.sign(h)*mm;
+        }
+      }catch(_e){}
+      return 180;
+    }
+
+    function getDeltaToMSK(tzName, storedOffsetMin){
+      const now = new Date();
+      const mskOffset = getTzOffsetMinutesSafe('Europe/Moscow', now);
+      if (tzName){
+        const srcOffset = getTzOffsetMinutesSafe(tzName, now);
+        return (mskOffset - srcOffset);
+      }
+      if (typeof storedOffsetMin === 'number' && Number.isFinite(storedOffsetMin)){
+        return (mskOffset - storedOffsetMin);
+      }
+      return 0;
+    }
+
     const DAYS  = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
     const TIMES = ['07:00 – 10:00','10:00 – 13:00','13:00 – 16:00','16:00 – 19:00','19:00 – 23:00','23:00 – 06:00'];
     const DECKS = ['Вампир','Ктулху','Котэ','Стандарт','Орк','Упряжка','Гном','Звёздный'];
@@ -617,6 +659,11 @@
         const telegram = telegramRaw ? telegramRaw.trim() : null;
         const telegram_id = /^\d+$/.test(tgIdFromLink||"") ? Number(tgIdFromLink) : null;
 
+        // ⬅️ СНАЧАЛА таймзона
+        const tzName = Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+        const tzOffsetMin = getTzOffsetMinutesSafe(tzName, new Date());
+
+        // затем payload
         const payload = {
           clan: "Феникс",
           nickname: form.nickname.value.trim(),
@@ -634,11 +681,9 @@
           clan_life:  document.getElementById("clan_life")?.checked  || false,
           user_agent: navigator.userAgent,
           updated_at: new Date().toISOString(),
+          tz_name: tzName,
+          tz_offset_minutes: tzOffsetMin,
         };
-
-        // Вычисляем tz локально (не ломаем БД, если колонок нет)
-        const tzName = Intl.DateTimeFormat().resolvedOptions().timeZone || null;
-        const tzOffsetMin = getTzOffsetMinutesSafe(tzName, new Date());
 
         try {
           let playerId = null;
@@ -692,7 +737,7 @@
             }
           }
 
-          // записать tz (мягко, если колонок нет — игнор)
+          // записать tz (мягко)
           if (playerId && tzName){
             try{
               await supabase.from("rg_players").update({
@@ -740,7 +785,6 @@
       setMskUI();
       mskToggle.addEventListener('change', ()=>{ setMskUI(); applyFilters(); });
 
-      // Pills render
       function renderPills(containerId, list){
         const box = document.getElementById(containerId);
         box.innerHTML = '';
@@ -755,12 +799,11 @@
       renderPills('flt-times', TIMES);
       renderPills('flt-decks', DECKS);
 
-      // State
       let allRows = [];
       let supaReadyInterval = setInterval(()=>{ if (window.supabase){ clearInterval(supaReadyInterval); init(); } }, 50);
 
       async function init(){
-        await load(); // первичная загрузка
+        await load();
         document.getElementById('reload').addEventListener('click', load);
         document.getElementById('reset').addEventListener('click', ()=>{
           document.querySelectorAll('.pill.active').forEach(p=>p.classList.remove('active'));
@@ -788,10 +831,62 @@
         return [...document.querySelectorAll(`#${containerId} .pill.active`)].map(p=>p.dataset.value);
       }
 
+      function toMSKTimes(row, labels){
+        if(!labels || !labels.length) return [];
+        const tz = row.tz_name || null;
+        const delta = getDeltaToMSK(tz, row.tz_offset_minutes);
+
+        function parseRange(label){
+          const m = label.match(/^(\d{2}):(\d{2})\s*–\s*(\d{2}):(\d{2})$/);
+          if(!m) return null;
+          const s = (+m[1])*60 + (+m[2]);
+          const e = (+m[3])*60 + (+m[4]);
+          return { s, e };
+        }
+        const TIMES = ['07:00 – 10:00','10:00 – 13:00','13:00 – 16:00','16:00 – 19:00','19:00 – 23:00','23:00 – 06:00'];
+        const SLOT_LIST = TIMES.map(t=>{
+          const pr=parseRange(t);
+          return { t, s: pr.s, e: pr.e };
+        });
+
+        function wrap(x){ return (x%1440+1440)%1440; }
+        function shiftInterval(iv, dlt){
+          const ns = wrap(iv.s + dlt);
+          const ne = wrap(iv.e + dlt);
+          return { s: ns, e: ne };
+        }
+        function overlapMinutes(a, b, c, d){
+          function norm(x){return (x%1440+1440)%1440}
+          a=norm(a); b=norm(b); c=norm(c); d=norm(d);
+          function segOverlap(x1,x2,y1,y2){ return Math.max(0, Math.min(x2,y2) - Math.max(x1,y1)); }
+          let tot = 0;
+          const A = (b>=a) ? [[a,b]] : [[a,1440],[0,b]];
+          const B = (d>=c) ? [[c,d]] : [[c,1440],[0,d]];
+          for(const [x1,x2] of A){
+            for(const [y1,y2] of B){
+              tot += segOverlap(x1,x2,y1,y2);
+            }
+          }
+          return tot;
+        }
+
+        const resSet = new Set();
+        for(const lab of labels){
+          const pr = parseRange(lab); if(!pr) continue;
+          const sh = shiftInterval(pr, delta);
+          for(const slot of SLOT_LIST){
+            const ov = overlapMinutes(sh.s, sh.e, slot.s, slot.e);
+            const span = (slot.e >= slot.s) ? (slot.e-slot.s) : (1440 - slot.s + slot.e);
+            if (ov >= 0.5 * span) resSet.add(slot.t);
+          }
+        }
+        return Array.from(resSet);
+      }
+
       function passFilters(r){
         const q = (document.getElementById('search').value||'').trim().toLowerCase();
         if (q){
-          const hit = (r.nickname||'').toLowerCase().includes(q); // поиск только по нику
+          const hit = (r.nickname||'').toLowerCase().includes(q);
           if (!hit) return false;
         }
 
@@ -806,13 +901,6 @@
         return true;
       }
 
-      function applyFilters(){
-        const rows = allRows.filter(passFilters);
-        renderMetrics(rows);
-        renderHeat(rows);
-        renderTable(rows);
-      }
-
       function renderMetrics(rows){
         const total = rows.length;
         const beg = rows.filter(r=>r.experience?.startsWith('Новичок')).length;
@@ -825,6 +913,8 @@
       }
 
       function renderHeat(rows){
+        const DAYS = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+        const TIMES = ['07:00 – 10:00','10:00 – 13:00','13:00 – 16:00','16:00 – 19:00','19:00 – 23:00','23:00 – 06:00'];
         const M = DAYS.map(()=>TIMES.map(()=>0));
         rows.forEach(r=>{
           const dlist = (r.days||[]);
@@ -884,104 +974,11 @@
         document.getElementById('grid').innerHTML = html;
       }
 
-      // ===== ВРЕМЕНА И ТАЙМЗОНЫ =====
-
-      // парсер "HH:MM – HH:MM"
-      function parseRange(label){
-        const m = label.match(/^(\d{2}):(\d{2})\s*–\s*(\d{2}):(\d{2})$/);
-        if(!m) return null;
-        const s = (+m[1])*60 + (+m[2]);
-        const e = (+m[3])*60 + (+m[4]);
-        return { s, e };
-      }
-
-      const SLOT_LIST = TIMES.map(t=>({t, ...parseRange(t)}));
-
-      // смещение интервала на delta минут
-      function shiftInterval({s,e}, delta){
-        const wrap = x => (x%1440+1440)%1440;
-        const ns = wrap(s + delta);
-        const ne = wrap(e + delta);
-        return { s: ns, e: ne };
-      }
-
-      // пересечение [a,b) и [c,d) на 24ч окружности
-      function overlapMinutes(a, b, c, d){
-        function norm(x){return (x%1440+1440)%1440}
-        a=norm(a); b=norm(b); c=norm(c); d=norm(d);
-        function segOverlap(x1,x2,y1,y2){ return Math.max(0, Math.min(x2,y2) - Math.max(x1,y1)); }
-        let tot = 0;
-        const A = (b>=a) ? [[a,b]] : [[a,1440],[0,b]];
-        const B = (d>=c) ? [[c,d]] : [[c,1440],[0,d]];
-        for(const [x1,x2] of A){
-          for(const [y1,y2] of B){
-            tot += segOverlap(x1,x2,y1,y2);
-          }
-        }
-        return tot;
-      }
-
-      // конвертация списка ярлыков игрока в ярлыки МСК
-      function toMSKTimes(row, labels){
-        if(!labels || !labels.length) return [];
-        const tz = row.tz_name || null;
-        const delta = getDeltaToMSK(tz, row.tz_offset_minutes);
-        const resSet = new Set();
-        for(const lab of labels){
-          const pr = parseRange(lab); if(!pr) continue;
-          const sh = shiftInterval(pr, delta);
-          for(const slot of SLOT_LIST){
-            const ov = overlapMinutes(sh.s, sh.e, slot.s, slot.e);
-            const span = (slot.e >= slot.s) ? (slot.e-slot.s) : (1440 - slot.s + slot.e);
-            if (ov >= 0.5 * span) resSet.add(slot.t);
-          }
-        }
-        return Array.from(resSet);
-      }
-
-      // разница (в минутах), которую нужно ДОБАВИТЬ к локальному времени игрока, чтобы получить МСК
-      function getDeltaToMSK(tzName, storedOffsetMin){
-        const now = new Date();
-        const mskOffset = getTzOffsetMinutesSafe('Europe/Moscow', now);
-        if (tzName){
-          const srcOffset = getTzOffsetMinutesSafe(tzName, now);
-          return (mskOffset - srcOffset);
-        }
-        if (typeof storedOffsetMin === 'number' && Number.isFinite(storedOffsetMin)){
-          return (mskOffset - storedOffsetMin);
-        }
-        return 0;
-      }
-
-      // безопасное получение смещения таймзоны в минутах
-      function getTzOffsetMinutesSafe(tz, date){
-        try{
-          if(!tz) return 180; // дефолт МСК
-          const fmt = new Intl.DateTimeFormat('en-US', {
-            timeZone: tz,
-            hourCycle:'h23',
-            year:'numeric', month:'2-digit', day:'2-digit',
-            hour:'2-digit', minute:'2-digit', second:'2-digit',
-            timeZoneName: 'shortOffset'
-          });
-          const parts = fmt.formatToParts(date);
-          const off = parts.find(p=>p.type==='timeZoneName')?.value || '';
-          const m = off.match(/GMT([+-]\d{1,2})(?::?(\d{2}))?/i) || off.match(/UTC([+-]\d{1,2})(?::?(\d{2}))?/i);
-          if (m){
-            const h = parseInt(m[1],10);
-            const mm = m[2] ? parseInt(m[2],10) : 0;
-            return h*60 + Math.sign(h)*mm;
-          }
-          const fmt2 = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName:'longOffset' });
-          const parts2 = fmt2.formatToParts(date);
-          const off2 = parts2.find(p=>p.type==='timeZoneName')?.value || '';
-          const m2 = off2.match(/UTC([+-]\d{1,2}):(\d{2})/i);
-          if(m2){
-            const h = parseInt(m2[1],10), mm = parseInt(m2[2],10);
-            return h*60 + Math.sign(h)*mm;
-          }
-        }catch(_e){}
-        return 180;
+      function applyFilters(){
+        const rows = allRows.filter(passFilters);
+        renderMetrics(rows);
+        renderHeat(rows);
+        renderTable(rows);
       }
     })();
   })();
