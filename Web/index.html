@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ФЕНИКС — регистрация игрока</title>
+  <title>ЭКВИЛИБРИУМ — регистрация игрока</title>
 
   <!-- PUBLIC ключи Supabase -->
   <script>
@@ -276,7 +276,7 @@
       <div class="feathers" aria-hidden="true"></div>
 
       <header class="hero">
-        <h1 class="title">ФЕНИКС</h1>
+        <h1 class="title">ЭКВИЛИБРИУМ</h1>
 
         <div class="egg-wrap">
           <div class="egg">
@@ -584,9 +584,9 @@
       setTimeout(()=>{ el.remove(); }, ms + 450);
     }
     const phoenix = {
-      welcome(){ showMessage("🕊️ Пламя ФЕНИКСа приняло тебя! Добро пожаловать в семью, воин света!", "success"); },
-      updated(){ showMessage("🔥 Твоя анкета возродилась из пепла — данные успешно обновлены!", "info"); },
-      oops(){ showMessage("💀 Ошибка судьбы! Обратись к Хранителю огня @DeKo_Sun.", "error"); }
+      welcome(){ showMessage("⚖️ Ты вступил в Эквилибриум — здесь сила обретает равновесие. Добро пожаловать!", "success"); },
+      updated(){ showMessage("♾️ Баланс восстановлен — данные успешно обновлены!", "info"); },
+      oops(){ showMessage("💀 Ошибка судьбы! Обратись к @DeKo_Sun.", "error"); }
     };
 
     // ===== Supabase + сохранение =====
@@ -625,7 +625,7 @@
 
         // затем payload
         const payload = {
-          clan: "Феникс",
+          clan: "ЭКВИЛИБРИУМ",
           nickname: form.nickname.value.trim(),
           telegram: telegram || null,
           telegram_id,
